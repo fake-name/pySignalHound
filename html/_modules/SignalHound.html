@@ -262,22 +262,33 @@
 </div>
 <div class="viewcode-block" id="SignalHound.getDeviceDiagnostics"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.getDeviceDiagnostics">[docs]</a>	<span class="k">def</span> <span class="nf">getDeviceDiagnostics</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbGetDeviceDiagnostics(int device, float *temperature, float *voltage1_8, float *voltage1_2, float *voltageUSB, float *currentUSB);</span>
 
-<span class="sd">		temperature  Pointer to 32bit float. If the function is successful temperature will point</span>
-<span class="sd">				to the current internal device temperature, in degrees Celsius. See</span>
-<span class="sd">				&quot;bbSelfCal&quot; for an explanation on why you need to monitor the device</span>
-<span class="sd">				temperature.</span>
-<span class="sd">		voltageUSB  USB operating voltage, in volts. Acceptable ranges are 4.40 to 5.25 V.</span>
-<span class="sd">		currentUSB  USB current draw, in mA. Acceptable ranges are 800 - 1000 mA</span>
+<span class="sd">		Query signal-hound&#39;s physical state and hardware status.</span>
 
-<span class="sd">		Pass NULL to any parameter you do not wish to query.</span>
+<span class="sd">		Args:</span>
+<span class="sd">			No Args</span>
+<span class="sd">		Returns:</span>
+<span class="sd">			dictionary containing current temperature, USB Voltage, and current:</span>
+
+<span class="sd">				| {</span>
+<span class="sd">				|	&quot;temperature&quot;: &lt;Internal temperature of the SignalHound in Degrees Celcius.&gt;,</span>
+<span class="sd">				|	&quot;voltageUSB&quot;:  &lt;USB operating voltage, in volts. Acceptable ranges are 4.40 to 5.25 V.&gt;,</span>
+<span class="sd">				|	&quot;currentUSB&quot;:  &lt;USB current draw, in mA. Acceptable ranges are 800 - 1000 mA&gt;,</span>
+<span class="sd">				| }</span>
+
+
 <span class="sd">		The device temperature is updated in the API after each sweep is retrieved. The temperature is returned</span>
 <span class="sd">		in Celsius and has a resolution of 1/8 th of a degree. A temperature above 70 ° C or below 0 ° C indicates</span>
 <span class="sd">		your device is operating outside of its normal operating temperature, and may cause readings to be out</span>
 <span class="sd">		of spec, and may damage the device.</span>
+
 <span class="sd">		A USB voltage of below 4.4V may cause readings to be out of spec. Check your cable for damage and</span>
 <span class="sd">		USB connectors for damage or oxidation.</span>
+
+<span class="sd">		Will raise ``EnvironmentError`` for temperatures or voltages outside the allowable range.</span>
+
+<span class="sd">		Raw call ``BB_API bbStatus bbGetDeviceDiagnostics(int device, float *temperature, float *voltage1_8, float *voltage1_2, float *voltageUSB, float *currentUSB);``</span>
+
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="c"># self.log.info(&quot;Querying device diagnostics.&quot;)</span>
@@ -318,7 +329,26 @@
 		<span class="k">return</span> <span class="n">ret</span>
 </div>
 <div class="viewcode-block" id="SignalHound.queryStreamInfo"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.queryStreamInfo">[docs]</a>	<span class="k">def</span> <span class="nf">queryStreamInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		Args:</span>
+<span class="sd">			No Args</span>
+<span class="sd">		Returns:</span>
+<span class="sd">			dictionary containing status information on the IQ data stream:</span>
 
+<span class="sd">				| {</span>
+<span class="sd">				|	&quot;return_len&quot;:       &lt;The number of IQ samples pairs which will be returned by calling ``bbFetchRaw()``.&gt;,</span>
+<span class="sd">				|	&quot;samples_per_sec&quot;:  &lt;The number of IQ pairs to expect per second.&gt;,</span>
+<span class="sd">				|	&quot;bandwidth&quot;:        &lt;The bandpass filter bandwidth, width in Hz. Width is specified by the 3dB rolloff points.&gt;,</span>
+<span class="sd">				| }</span>
+
+
+<span class="sd">		Use this function to characterize the IQ data stream.</span>
+
+<span class="sd">		Will raise ``IOError`` If the device is not open, not streaming, or if an unknown error is encountered..</span>
+
+<span class="sd">		Raw call ``BB_API bbStatus bbQueryStreamInfo(int device, int *return_len, double *bandwidth, int *samples_per_sec);``</span>
+
+<span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="n">return_len</span>         <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_int</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 		<span class="n">bandwidth</span>          <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_double</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -352,24 +382,42 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureAcquisition"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureAcquisition">[docs]</a>	<span class="k">def</span> <span class="nf">configureAcquisition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">detector</span><span class="p">,</span> <span class="n">scale</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureAcquisition(int device, unsigned int detector, unsigned int scale);</span>
 
-<span class="sd">		detectorType  Specifies the video detector. The two possible values for detector type</span>
-<span class="sd">				are BB_AVERAGE and BB_MIN_AND_MAX.</span>
-<span class="sd">		verticalScale  Specifies the scale in which sweep results are returned int. The four</span>
-<span class="sd">				possible values for verticalScale are BB_LOG_SCALE, BB_LIN_SCALE,</span>
-<span class="sd">				BB_LOG_FULL_SCALE, and BB_LIN_FULL_SCALE</span>
+<span class="sd">		Args:</span>
+<span class="sd">			detectorType (string): Specifies the video detector. The two possible values for detector type</span>
+<span class="sd">					are:</span>
+<span class="sd">					 - &quot;average&quot; (mapped to ``BB_AVERAGE``)</span>
+<span class="sd">					 - &quot;min-max&quot; (mapped to ``BB_MIN_AND_MAX``).</span>
+<span class="sd">			verticalScale (string):  Specifies the scale in which sweep results are returned int. The four</span>
+<span class="sd">					possible values for verticalScale are:</span>
+<span class="sd">					 - &quot;log-scale&quot; (mapped to ``BB_LOG_SCALE``)</span>
+<span class="sd">					 - &quot;lin-scale&quot; (mapped to ``BB_LIN_SCALE``),</span>
+<span class="sd">					 - &quot;log-full-scale&quot; (mapped to ``BB_LOG_FULL_SCALE``)</span>
+<span class="sd">					 - &quot;lin-full-scale&quot; (mapped to ``BB_LIN_FULL_SCALE``)</span>
+<span class="sd">		Returns:</span>
+<span class="sd">			Nothing</span>
 
-<span class="sd">		The verticalScale parameter will change the units of returned sweeps. If BB_LOG_SCALE is provided</span>
-<span class="sd">		sweeps will be returned in amplitude unit dBm. If BB_LIN_SCALE is return, the returned units will be in</span>
+<span class="sd">		The verticalScale parameter will change the units of returned sweeps. If ``BB_LOG_SCALE`` is provided</span>
+<span class="sd">		sweeps will be returned in amplitude unit dBm. If ``BB_LIN_SCALE`` is specified, the returned units will be in</span>
 <span class="sd">		millivolts. If the full scale units are specified, no corrections are applied to the data and amplitudes are</span>
 <span class="sd">		taken directly from the full scale input.</span>
+
 <span class="sd">		detectorType specifies how to produce the results of the signal processing for the final sweep.</span>
 <span class="sd">		Depending on settings, potentially many overlapping FFTs will be performed on the input time domain</span>
 <span class="sd">		data to retrieve a more consistent and accurate final result. When the results overlap detectorType</span>
 <span class="sd">		chooses whether to average the results together, or maintain the minimum and maximum values. If</span>
 <span class="sd">		averaging is chosen the min and max trace arrays returned from bbFetchTrace will contain the same</span>
 <span class="sd">		averaged data</span>
+
+<span class="sd">		Will raise ``ValueError`` if invalid strings are passed (e.g. they&#39;re not one of the specified values above).</span>
+
+<span class="sd">		Will raise ``IOError`` for the following error-codes:</span>
+<span class="sd">		 - ``bbDeviceNotOpenErr`` - &quot;Device not open!&quot;</span>
+<span class="sd">		 - ``bbInvalidDetectorErr`` - &quot;Invalid Detector mode!&quot;</span>
+<span class="sd">		 - ``bbInvalidScaleErr`` - &quot;Invalid scale setting error!&quot;</span>
+<span class="sd">		 - Any unknown errors</span>
+
+<span class="sd">		Raw call: ``BB_API bbStatus bbConfigureAcquisition(int device, unsigned int detector, unsigned int scale);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">acq_conf</span><span class="p">[</span><span class="s">&quot;detector&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">detector</span>
@@ -382,8 +430,8 @@
 
 		<span class="n">scaleVals</span> <span class="o">=</span> <span class="p">{</span>
 			<span class="s">&quot;log-scale&quot;</span>      <span class="p">:</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_uint</span><span class="p">(</span><span class="n">hf</span><span class="o">.</span><span class="n">BB_LOG_SCALE</span><span class="p">),</span>
-			<span class="s">&quot;log-full-scale&quot;</span> <span class="p">:</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_uint</span><span class="p">(</span><span class="n">hf</span><span class="o">.</span><span class="n">BB_LOG_FULL_SCALE</span><span class="p">),</span>
 			<span class="s">&quot;lin-scale&quot;</span>      <span class="p">:</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_uint</span><span class="p">(</span><span class="n">hf</span><span class="o">.</span><span class="n">BB_LIN_SCALE</span><span class="p">),</span>
+			<span class="s">&quot;log-full-scale&quot;</span> <span class="p">:</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_uint</span><span class="p">(</span><span class="n">hf</span><span class="o">.</span><span class="n">BB_LOG_FULL_SCALE</span><span class="p">),</span>
 			<span class="s">&quot;lin-full-scale&quot;</span> <span class="p">:</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_uint</span><span class="p">(</span><span class="n">hf</span><span class="o">.</span><span class="n">BB_LIN_FULL_SCALE</span><span class="p">)</span>
 		<span class="p">}</span>
 
@@ -414,22 +462,30 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureCenterSpan"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureCenterSpan">[docs]</a>	<span class="k">def</span> <span class="nf">configureCenterSpan</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">center</span><span class="p">,</span> <span class="n">span</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureCenterSpan(int device, double center, double span);</span>
 
-<span class="sd">		center 	Center frequency in hertz.</span>
-<span class="sd">		span  	Span in hertz</span>
+<span class="sd">		Args:</span>
+<span class="sd">			center (float): 	Center frequency in hertz.</span>
+<span class="sd">			span (float):  	Span in hertz</span>
 
 <span class="sd">		This function configures the operating frequency band of the broadband device. Start and stop</span>
 <span class="sd">		frequencies can be determined from the center and span.</span>
+
 <span class="sd">		-  start = center - (span/2)</span>
 <span class="sd">		-  stop = center+(span/2)</span>
+
 <span class="sd">		The values provided are used by the device during initialization and a more precise start frequency is</span>
 <span class="sd">		returned after initiation. Refer to the bbQueryTraceInfo function for more information.</span>
-<span class="sd">		Each device has a specified operational frequency range. These limits are BB#_MIN_FREQ and</span>
-<span class="sd">		BB#_MAX_FREQ. The center and span provided cannot specify a sweep outside of this range.</span>
-<span class="sd">		There is also an absolute minimum operating span.</span>
+
+<span class="sd">		Each device has a specified operational frequency range. These limits are ``BB#_MIN_FREQ`` and</span>
+<span class="sd">		``BB#_MAX_FREQ``, where ``#`` is the signal-hound model number (see ``bb_api_h.py``). The center and</span>
+<span class="sd">		span provided cannot specify a sweep outside of this range. There is also an absolute minimum operating span.</span>
+
 <span class="sd">		Certain modes of operation have specific frequency range limits. Those mode dependent limits are</span>
 <span class="sd">		tested against during initialization and not here.</span>
+
+<span class="sd">		Raises ``IOError`` on errors.</span>
+
+<span class="sd">		Raw call: ``BB_API bbStatus bbConfigureCenterSpan(int device, double center, double span);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">acq_conf</span><span class="p">[</span><span class="s">&quot;center_freq&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">center</span>
@@ -457,21 +513,27 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureLevel"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureLevel">[docs]</a>	<span class="k">def</span> <span class="nf">configureLevel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">atten</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureLevel(int device, double ref, double atten);</span>
 
-<span class="sd">		Reference and attenuation in dBm</span>
-<span class="sd">		ref		Reference level in dBm.</span>
-<span class="sd">		atten		Attenuation setting in dB. If attenuation provided is negative,</span>
-<span class="sd">			attenuation is selected automatically.</span>
+<span class="sd">		Args:</span>
+<span class="sd">			ref (float): Reference level in dBm.</span>
+<span class="sd">			atten (float): Attenuation setting in dB. If attenuation provided is negative, attenuation is selected automatically.</span>
+<span class="sd">				``atten`` must be a integer multiple of 10 (or ``-1``). The hardware supports attenuation levels of 0 dB, 10 dB, 20 dB, and 30 dB ONLY.</span>
 
 <span class="sd">		When automatic gain is selected, the API uses the reference level provided to choose the best gain</span>
 <span class="sd">		settings for an input signal with amplitude equal to reference level. If a gain other than BB_AUTO_GAIN</span>
 <span class="sd">		is specified using bbConfigureGain, the reference level parameter is ignored.</span>
+
 <span class="sd">		The atten parameter controls the RF input attenuator, and is adjustable from 0 to 30 dB in 10 dB steps.</span>
 <span class="sd">		The RF attenuator is the first gain control device in the front end.</span>
+
 <span class="sd">		When attenuation is automatic, the attenuation and gain for each band is selected independently. When</span>
 <span class="sd">		attenuation is not automatic, a flat attenuation is set across the entire spectrum. A set attenuation may</span>
 <span class="sd">		produce a non-flat noise floor.</span>
+
+<span class="sd">		Raises ``ValueError`` for invalid attenuation values, ``IOError`` for other errors.</span>
+
+<span class="sd">		Raw call: ``BB_API bbStatus bbConfigureLevel(int device, double ref, double atten);``</span>
+
 <span class="sd">		&#39;&#39;&#39;</span>
 
 
@@ -506,19 +568,26 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureGain"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureGain">[docs]</a>	<span class="k">def</span> <span class="nf">configureGain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gain</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureGain(int device, int gain);</span>
-
-<span class="sd">		gain		A gain setting</span>
+<span class="sd">		Args:</span>
+<span class="sd">			gain (float): A gain setting</span>
 
 <span class="sd">		To return the device to automatically choose the best gain setting, call this function with a gain of</span>
-<span class="sd">		BB_AUTO_GAIN.</span>
-<span class="sd">		The gain choices for each device range from 0 to BB#_MAX_GAIN.</span>
-<span class="sd">		When BB_AUTO_GAIN is selected, the API uses the reference level provided in bbConfigureLevel to</span>
+<span class="sd">		``BB_AUTO_GAIN``.</span>
+
+<span class="sd">		The gain choices for each device range from 0 to ``BB#_MAX_GAIN``, where ``#`` is the signal-hound model number (see ``bb_api_h.py``).</span>
+
+<span class="sd">		When ``BB_AUTO_GAIN`` is selected, the API uses the reference level provided in bbConfigureLevel to</span>
 <span class="sd">		choose the best gain setting for an input signal with amplitude equal to the reference level provided.</span>
+
 <span class="sd">		After the RF input attenuator (0-30 dB), the RF path contains an additional amplifier stage after band</span>
 <span class="sd">		filtering, which is selected for medium or high gain and bypassed for low or no gain.</span>
+
 <span class="sd">		Additionally, the IF has an amplifier which is bypassed only for a gain of zero.</span>
+
 <span class="sd">		For the highest gain settings, additional amplification in the ADC stage is used.</span>
+
+
+<span class="sd">		Raw call: ``BB_API bbStatus bbConfigureGain(int device, int gain);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 
@@ -554,93 +623,99 @@
 		<span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">		BB_API bbStatus bbConfigureSweepCoupling(int device, double rbw, double vbw, double sweepTime, unsigned int rbwType, unsigned int rejection);</span>
 
-<span class="sd">		device  Handle to the device being configured.</span>
-<span class="sd">		rbw  	Resolution bandwidth in Hz. Use the bandwidth table in the appendix to</span>
-<span class="sd">				determine good values to choose. As of 1.07 in non-native mode, RBW</span>
-<span class="sd">				can be arbitrary. Therefore you may choose values not in the table and</span>
-<span class="sd">				they will not clamp.</span>
-<span class="sd">		vbw  Video bandwidth (VBW) in Hz. VBW must be less than or equal to RBW.</span>
-<span class="sd">				VBW can be arbitrary. For best performance use RBW as the VBW.</span>
-<span class="sd">		sweepTime  Sweep time in seconds.</span>
-<span class="sd">				In sweep mode, this value is how long the device collects data before it</span>
-<span class="sd">				begins processing. Maximum values to be provided should be around</span>
-<span class="sd">				100ms.</span>
-<span class="sd">				In the real-time configuration, this value represents the length of time</span>
-<span class="sd">				data is collected and compounded before returning a sweep. Values for</span>
-<span class="sd">				real-time should be between 16ms-100ms for optimal viewing and use.</span>
-<span class="sd">				In zero span mode this is the length of the returned sweep as a measure</span>
-<span class="sd">				of time. Sweep times for zero span must range between 10us and</span>
-<span class="sd">				100ms. Values outside this range are clamped.</span>
-<span class="sd">		rbwType  The possible values for rbwType are BB_NATIVE_RBW and</span>
-<span class="sd">				BB_NON_NATIVE_RBW. This choice determines which bandwidth table</span>
-<span class="sd">				is used and how the data is processed. BB_NATIVE_RBW is default and</span>
-<span class="sd">				unchangeable for real-time operation.</span>
-<span class="sd">		rejection  The possible values for rejection are BB_NO_SPUR_REJECT,</span>
-<span class="sd">				BB_SPUR_REJECT, and BB_BYPASS_RF.</span>
+<span class="sd">		Args</span>
+<span class="sd">			rbw (float): Resolution bandwidth in Hz. Use the bandwidth table in the appendix to</span>
+<span class="sd">					determine good values to choose. As of 1.07 in non-native mode, RBW</span>
+<span class="sd">					can be arbitrary. Therefore you may choose values not in the table and</span>
+<span class="sd">					they will not clamp.</span>
+<span class="sd">			vbw (float): Video bandwidth (VBW) in Hz. VBW must be less than or equal to RBW.</span>
+<span class="sd">					VBW can be arbitrary. For best performance use RBW as the VBW.</span>
+<span class="sd">			sweepTime (float): Sweep time in seconds.</span>
+<span class="sd">					In sweep mode, this value is how long the device collects data before it</span>
+<span class="sd">					begins processing. Maximum values to be provided should be around</span>
+<span class="sd">					100ms.</span>
+<span class="sd">					In the real-time configuration, this value represents the length of time</span>
+<span class="sd">					data is collected and compounded before returning a sweep. Values for</span>
+<span class="sd">					real-time should be between 16ms-100ms for optimal viewing and use.</span>
+<span class="sd">					In zero span mode this is the length of the returned sweep as a measure</span>
+<span class="sd">					of time. Sweep times for zero span must range between 10us and</span>
+<span class="sd">					100ms. Values outside this range are clamped.</span>
+<span class="sd">			rbwType (float): The possible values for rbwType are BB_NATIVE_RBW and</span>
+<span class="sd">					BB_NON_NATIVE_RBW. This choice determines which bandwidth table</span>
+<span class="sd">					is used and how the data is processed. BB_NATIVE_RBW is default and</span>
+<span class="sd">					unchangeable for real-time operation.</span>
+<span class="sd">			rejection (float): The possible values for rejection are BB_NO_SPUR_REJECT,</span>
+<span class="sd">					BB_SPUR_REJECT, and BB_BYPASS_RF.</span>
 
 <span class="sd">		The resolution bandwidth, or RBW, represents the bandwidth of spectral energy represented in each</span>
 <span class="sd">		frequency bin. For example, with an RBW of 10 kHz, the amplitude value for each bin would represent</span>
 <span class="sd">		the total energy from 5 kHz below to 5 kHz above the bin&#39;s center. For standard bandwidths, the API</span>
 <span class="sd">		uses the 3 dB points to define the RBW.</span>
+
 <span class="sd">		The video bandwidth, or VBW, is applied after the signal has been converted to frequency domain as</span>
 <span class="sd">		power, voltage, or log units. It is implemented as a simple rectangular window, averaging the amplitude</span>
 <span class="sd">		readings for each frequency bin over several overlapping FFTs. A signal whose amplitude is modulated at</span>
-<span class="sd">		Test Equipment Plus | 17</span>
 <span class="sd">		a much higher frequency than the VBW will be shown as an average, whereas amplitude modulation at</span>
 <span class="sd">		a lower frequency will be shown as a minimum and maximum value.</span>
+
 <span class="sd">		Native RBWs represent the bandwidths from a single power-of-2 FFT using our sample rate of 80 MSPS</span>
 <span class="sd">		and a high dynamic range window function. Each RBW is half of the previous. Using native RBWs can</span>
 <span class="sd">		give you the lowest possible bandwidth for any given sweep time, and minimizes processing power.</span>
 <span class="sd">		However, scalloping losses of up to 0.8 dB, occurring when a signal falls in between two bins, can cause</span>
 <span class="sd">		problems for some types of measurements.</span>
+
 <span class="sd">		Non-native RBWs use the traditional 1-3-10 sequence. As of version 1.0.7, non-native bandwidths are</span>
 <span class="sd">		not restricted to the 1-3-10 sequence but can be arbitrary. Programmatically, non-native RBW&#39;s are</span>
 <span class="sd">		achieved by creating variable sized bandwidth flattop windows.</span>
+
 <span class="sd">		sweepTime applies to regular sweep mode and real-time mode. If in sweep mode, sweepTime is the</span>
 <span class="sd">		amount of time the device will spend collecting data before processing. Increasing this value is useful for</span>
 <span class="sd">		capturing signals of interest or viewing a more consistent view of the spectrum. Increasing sweepTime</span>
 <span class="sd">		has a very large impact on the amount of resources used by the API due to the increase of data needing</span>
 <span class="sd">		to be stored and the amount of signal processing performed. For this reason, increasing sweepTime also</span>
 <span class="sd">		decreases the rate at which you can acquire sweeps.</span>
+
 <span class="sd">		In real-time, sweepTime refers to how long data is accumulated before returning a sweep. Ensure you</span>
 <span class="sd">		are capable of retrieving as many sweeps that will be produced by changing this value. For instance,</span>
 <span class="sd">		changing sweepTime to 32ms in real-time mode will return approximately 31 sweeps per second</span>
 <span class="sd">		(1000/32).</span>
+
 <span class="sd">		Rejection can be used to optimize certain aspects of the signal. Default is BB_NO_SPUR_REJECT, and</span>
 <span class="sd">		should be used in most cases. If you have a steady CW or slowly changing signal, and need to minimize</span>
 <span class="sd">		image and spurious responses from the device, use BB_SPUR_REJECT. If you have a signal between 300</span>
 <span class="sd">		MHz and 3 GHz, need the lowest possible phase noise, and do not need any image rejection,</span>
 <span class="sd">		BB_BYPASS_RF can be used to rewire the front end for lowest phase noise.</span>
 
+<span class="sd">		::</span>
 
-<span class="sd">		Native Bandwidths (Hz)      FFT size</span>
-<span class="sd">		        10.10e6              16</span>
-<span class="sd">		         5.050e6             32</span>
-<span class="sd">		         2.525e6             64</span>
-<span class="sd">		         1.262e6            128</span>
-<span class="sd">		       631.2e3              256  Largest Real-Time RBW</span>
-<span class="sd">		       315.6e3              512</span>
-<span class="sd">		       157.1e3             1024</span>
-<span class="sd">		        78.90e3            2048</span>
-<span class="sd">		        39.45e3            4096</span>
-<span class="sd">		        19.72e3            8192</span>
-<span class="sd">		         9.863e3          16384</span>
-<span class="sd">		         4.931e3          32768</span>
-<span class="sd">		         2.465e3          65536  Smallest Real-Time RBW</span>
-<span class="sd">		         1.232e3         131072</span>
-<span class="sd">		       616.45            262144</span>
-<span class="sd">		       308.22            524288</span>
-<span class="sd">		       154.11           1048576</span>
-<span class="sd">		       154.11           1048576</span>
-<span class="sd">		        77.05           2097152</span>
-<span class="sd">		        38.52           4194304</span>
-<span class="sd">		        19.26           8388608</span>
-<span class="sd">		         9.63          16777549</span>
-<span class="sd">		         4.81          33554432</span>
-<span class="sd">		         2.40          67108864</span>
-<span class="sd">		         1.204        134217728</span>
-<span class="sd">		         0.602        268435456</span>
-<span class="sd">		         0.301        536870912</span>
+<span class="sd">			Native Bandwidths (Hz)      FFT size</span>
+<span class="sd">			        10.10e6              16</span>
+<span class="sd">			         5.050e6             32</span>
+<span class="sd">			         2.525e6             64</span>
+<span class="sd">			         1.262e6            128</span>
+<span class="sd">			       631.2e3              256  Largest Real-Time RBW</span>
+<span class="sd">			       315.6e3              512</span>
+<span class="sd">			       157.1e3             1024</span>
+<span class="sd">			        78.90e3            2048</span>
+<span class="sd">			        39.45e3            4096</span>
+<span class="sd">			        19.72e3            8192</span>
+<span class="sd">			         9.863e3          16384</span>
+<span class="sd">			         4.931e3          32768</span>
+<span class="sd">			         2.465e3          65536  Smallest Real-Time RBW</span>
+<span class="sd">			         1.232e3         131072</span>
+<span class="sd">			       616.45            262144</span>
+<span class="sd">			       308.22            524288</span>
+<span class="sd">			       154.11           1048576</span>
+<span class="sd">			       154.11           1048576</span>
+<span class="sd">			        77.05           2097152</span>
+<span class="sd">			        38.52           4194304</span>
+<span class="sd">			        19.26           8388608</span>
+<span class="sd">			         9.63          16777549</span>
+<span class="sd">			         4.81          33554432</span>
+<span class="sd">			         2.40          67108864</span>
+<span class="sd">			         1.204        134217728</span>
+<span class="sd">			         0.602        268435456</span>
+<span class="sd">			         0.301        536870912</span>
 
 <span class="sd">		&#39;&#39;&#39;</span>
 
@@ -701,27 +776,33 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureIQ"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureIQ">[docs]</a>	<span class="k">def</span> <span class="nf">configureIQ</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">downsample</span><span class="p">,</span> <span class="n">bandwidth</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureIQ(int device, int downsampleFactor, double bandwidth);</span>
 
-<span class="sd">		downsampleFactor  Specify a decimation rate for the 40MS/s IQ digital stream.</span>
-<span class="sd">		bandwidth         Specify a bandpass filter width on the IQ digital stream.</span>
+<span class="sd">		Args:</span>
+<span class="sd">			downsampleFactor:  Specify a decimation rate for the 40MS/s IQ digital stream.</span>
+<span class="sd">			bandwidth:         Specify a bandpass filter width on the IQ digital stream.</span>
 
 <span class="sd">		Downsample factor settings:</span>
-<span class="sd">		Decimation-Rate  Sample Rate (IQ pairs/s)  Maximum Bandwidth</span>
-<span class="sd">		1                40 MS/s                   27 MHz</span>
-<span class="sd">		2                20 MS/s                   17.8 MHz</span>
-<span class="sd">		4                10 MS/s                   8.0 MHz</span>
-<span class="sd">		8                5 MS/s                    3.75 MHz</span>
-<span class="sd">		16               2.5 MS/s                  2.0 MHz</span>
-<span class="sd">		32               1.25 MS/s                 1.0 MHz</span>
-<span class="sd">		64               0.625 MS/s                0.5 MHz</span>
-<span class="sd">		128              0.3125 MS/s               0.125 MHz</span>
+<span class="sd">		::</span>
+
+<span class="sd">			Decimation-Rate  Sample Rate (IQ pairs/s)  Maximum Bandwidth</span>
+<span class="sd">			1                40 MS/s                   27 MHz</span>
+<span class="sd">			2                20 MS/s                   17.8 MHz</span>
+<span class="sd">			4                10 MS/s                   8.0 MHz</span>
+<span class="sd">			8                5 MS/s                    3.75 MHz</span>
+<span class="sd">			16               2.5 MS/s                  2.0 MHz</span>
+<span class="sd">			32               1.25 MS/s                 1.0 MHz</span>
+<span class="sd">			64               0.625 MS/s                0.5 MHz</span>
+<span class="sd">			128              0.3125 MS/s               0.125 MHz</span>
 
 <span class="sd">		This function is used to configure the digital IQ data stream. A decimation factor and filter bandwidth</span>
 <span class="sd">		are able to be specified. The decimation rate divides the IQ sample rate directly while the bandwidth</span>
 <span class="sd">		parameter further filters the digital stream.</span>
+
 <span class="sd">		For each given decimation rate, a maximum bandwidth value must be supplied to account for sufficient</span>
 <span class="sd">		filter rolloff. That table is above. See  bbFetchRaw() for polling the IQ data stream</span>
+
+<span class="sd">		BB_API bbStatus bbConfigureIQ(int device, int downsampleFactor, double bandwidth);</span>
+
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="n">validDecimationFactors</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="o">&lt;&lt;</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">)]</span>
@@ -754,16 +835,17 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureWindow"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureWindow">[docs]</a>	<span class="k">def</span> <span class="nf">configureWindow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureWindow(int device, unsigned int window);</span>
-
-<span class="sd">		device  Handle to the device being configured.</span>
-<span class="sd">		window  The possible values for window are BB_NUTALL, BB_BLACKMAN,</span>
-<span class="sd">				BB_HAMMING, and BB_FLAT_TOP.</span>
+<span class="sd">		Args:</span>
+<span class="sd">			device:  Handle to the device being configured.</span>
+<span class="sd">			window:  The possible values for window are BB_NUTALL, BB_BLACKMAN,</span>
+<span class="sd">					BB_HAMMING, and BB_FLAT_TOP.</span>
 
 <span class="sd">		This changes the windowing function applied to the data before signal processing is performed. In real-</span>
 <span class="sd">		time configuration the window parameter is permanently set to BB_NUTALL. The windows are only</span>
 <span class="sd">		changeable when using the BB_NATIVE_RBW type in bbConfigureSweepCoupling. When using</span>
 <span class="sd">		BB_NON_NATIVE_RBWs, a custom flattop window will be used.</span>
+
+<span class="sd">		BB_API bbStatus bbConfigureWindow(int device, unsigned int window);</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 
@@ -803,11 +885,11 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureProcUnits"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureProcUnits">[docs]</a>	<span class="k">def</span> <span class="nf">configureProcUnits</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">units</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureProcUnits(int device, unsigned int units);</span>
 
-<span class="sd">		device  Handle to the device being configured.</span>
-<span class="sd">		units  The possible values are BB_LOG, BB_VOLTAGE, BB_POWER, and</span>
-<span class="sd">				BB_BYPASS.</span>
+<span class="sd">		Args:</span>
+<span class="sd">			device:  Handle to the device being configured.</span>
+<span class="sd">			units:  The possible values are BB_LOG, BB_VOLTAGE, BB_POWER, and</span>
+<span class="sd">					BB_BYPASS.</span>
 
 <span class="sd">		The units provided determines what unit type video processing occurs in. The chart below shows which</span>
 <span class="sd">		unit types are used for each units selection.</span>
@@ -815,10 +897,14 @@
 <span class="sd">		modulated signal, BB_VOLTAGE would be a good choice. To emulate a traditional spectrum analyzer,</span>
 <span class="sd">		select BB_LOG. To minimize processing power, select BB_BYPASS.</span>
 
-<span class="sd">		BB_LOG      = dBm</span>
-<span class="sd">		BB_VOLTAGE  = mV</span>
-<span class="sd">		BB_POWER    = mW</span>
-<span class="sd">		BB_BYPASS   = No video processing</span>
+<span class="sd">		::</span>
+
+<span class="sd">			BB_LOG      = dBm</span>
+<span class="sd">			BB_VOLTAGE  = mV</span>
+<span class="sd">			BB_POWER    = mW</span>
+<span class="sd">			BB_BYPASS   = No video processing</span>
+
+<span class="sd">		BB_API bbStatus bbConfigureProcUnits(int device, unsigned int units);</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">acq_conf</span><span class="p">[</span><span class="s">&quot;data_units&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">units</span>
@@ -853,35 +939,37 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureTrigger"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureTrigger">[docs]</a>	<span class="k">def</span> <span class="nf">configureTrigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigType</span><span class="p">,</span> <span class="n">edge</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">timeout</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureTrigger(int device, unsigned int type, unsigned int edge, double level, double timeout);</span>
-
-<span class="sd">		device  Handle to the device being configured.</span>
-<span class="sd">		type  Specifies the type of trigger to use. Possible values are</span>
-<span class="sd">			BB_NO_TRIGGER, BB_VIDEO_TRIGGER, BB_EXTERNAL_TRIGGER, and</span>
-<span class="sd">			BB_GPS_PPS_TRIGGER. If an external signal is desired, BNC port 2 must</span>
-<span class="sd">			be configured to accept a trigger (see bbConfigureIO). When</span>
-<span class="sd">			BB_NO_TRIGGER is specified, the other parameters are ignored and this</span>
-<span class="sd">			function sets only trigger type.</span>
-<span class="sd">		edge  Specifies the edge type of a video trigger. Possible values are</span>
-<span class="sd">			BB_TRIGGER_RISING and BB_TRIGGER_FALLING. If you are using a</span>
-<span class="sd">			trigger type other than a video trigger, this value is ignored but must be</span>
-<span class="sd">			specified.</span>
-<span class="sd">		level  Level of the video trigger. The units of this value are determined by the</span>
-<span class="sd">			demodulation type used when initiating the device. If demodulating</span>
-<span class="sd">			AM, level is in dBm units, if demodulating FM, level is in Hz.</span>
-<span class="sd">		timeout  timeout specifies the length of a capture window in seconds. The</span>
-<span class="sd">			capture window specifies the length of continuous time you wish to</span>
-<span class="sd">			wait for a trigger. If no trigger is found within the window, the last</span>
-<span class="sd">			sweepTime of data within the data is returned. The capture window</span>
-<span class="sd">			must be greater than sweepTime. If it is not, it will be automatically</span>
-<span class="sd">			adjusted to sweepTime. The timeout/capture window is applicable to</span>
-<span class="sd">			both video and external triggering.</span>
+<span class="sd">		Args:</span>
+<span class="sd">			device:  Handle to the device being configured.</span>
+<span class="sd">			type:  Specifies the type of trigger to use. Possible values are</span>
+<span class="sd">				BB_NO_TRIGGER, BB_VIDEO_TRIGGER, BB_EXTERNAL_TRIGGER, and</span>
+<span class="sd">				BB_GPS_PPS_TRIGGER. If an external signal is desired, BNC port 2 must</span>
+<span class="sd">				be configured to accept a trigger (see bbConfigureIO). When</span>
+<span class="sd">				BB_NO_TRIGGER is specified, the other parameters are ignored and this</span>
+<span class="sd">				function sets only trigger type.</span>
+<span class="sd">			edge:  Specifies the edge type of a video trigger. Possible values are</span>
+<span class="sd">				BB_TRIGGER_RISING and BB_TRIGGER_FALLING. If you are using a</span>
+<span class="sd">				trigger type other than a video trigger, this value is ignored but must be</span>
+<span class="sd">				specified.</span>
+<span class="sd">			level:  Level of the video trigger. The units of this value are determined by the</span>
+<span class="sd">				demodulation type used when initiating the device. If demodulating</span>
+<span class="sd">				AM, level is in dBm units, if demodulating FM, level is in Hz.</span>
+<span class="sd">			timeout:  timeout specifies the length of a capture window in seconds. The</span>
+<span class="sd">				capture window specifies the length of continuous time you wish to</span>
+<span class="sd">				wait for a trigger. If no trigger is found within the window, the last</span>
+<span class="sd">				sweepTime of data within the data is returned. The capture window</span>
+<span class="sd">				must be greater than sweepTime. If it is not, it will be automatically</span>
+<span class="sd">				adjusted to sweepTime. The timeout/capture window is applicable to</span>
+<span class="sd">				both video and external triggering.</span>
 
 <span class="sd">		Allows you to configure all zero-span trigger related variables. As with all configure routines, the</span>
 <span class="sd">		changes made here are not reflected until the next initiate.</span>
+
 <span class="sd">		When a trigger is specified the sweep returned will start approximately 200 microseconds before the</span>
 <span class="sd">		trigger event. This provide a slight view of occurances directly before the event. If no trigger event is</span>
 <span class="sd">		found, the data returned at the end of the timeout period is returned.</span>
+
+<span class="sd">		BB_API bbStatus bbConfigureTrigger(int device, unsigned int type, unsigned int edge, double level, double timeout);</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Setting device trigger configuration.&quot;</span><span class="p">)</span>
@@ -938,15 +1026,19 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureTimeGate"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureTimeGate">[docs]</a>	<span class="k">def</span> <span class="nf">configureTimeGate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delay</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">timeout</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureTimeGate(int device, double delay, double length, double timeout);</span>
-<span class="sd">		device  Handle to the device being configured.</span>
-<span class="sd">		delay  The time in seconds, from the trigger to the beginning of the gate</span>
-<span class="sd">		length  The length in seconds, of the gate</span>
-<span class="sd">		timeout  The time in seconds to wait for a trigger. If no trigger is found, the last</span>
-<span class="sd">				length will be used.</span>
+
+<span class="sd">		Args:</span>
+<span class="sd">			device:  Handle to the device being configured.</span>
+<span class="sd">			delay:  The time in seconds, from the trigger to the beginning of the gate</span>
+<span class="sd">			length:  The length in seconds, of the gate</span>
+<span class="sd">			timeout:  The time in seconds to wait for a trigger. If no trigger is found, the last</span>
+<span class="sd">					length will be used.</span>
 
 <span class="sd">		Time gates are relative to an external trigger.</span>
+
 <span class="sd">		Therefore it is necessary to use bbConfigureIO to setup an external trigger.</span>
+
+<span class="sd">		BB_API bbStatus bbConfigureTimeGate(int device, double delay, double length, double timeout);</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Setting device external trigger time-gating settings.&quot;</span><span class="p">)</span>
