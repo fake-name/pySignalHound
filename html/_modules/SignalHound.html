@@ -87,6 +87,8 @@
 
 <div class="viewcode-block" id="SignalHound"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound">[docs]</a><span class="k">class</span> <span class="nc">SignalHound</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
+
+	<span class="c">#: C Call return value -&gt; integer return code mapping</span>
 	<span class="n">bbStatus</span> <span class="o">=</span> <span class="p">{</span>
 		<span class="s">&quot;bbInvalidModeErr&quot;</span>             <span class="p">:</span> <span class="o">-</span><span class="mi">112</span><span class="p">,</span>
 		<span class="s">&quot;bbReferenceLevelErr&quot;</span>          <span class="p">:</span> <span class="o">-</span><span class="mi">111</span><span class="p">,</span>
@@ -127,10 +129,13 @@
 		<span class="s">&quot;bbNoTriggerFound&quot;</span>             <span class="p">:</span> <span class="mi">3</span>
 	<span class="p">}</span>
 
-	<span class="n">rawDataArrSize</span> <span class="o">=</span> <span class="mi">299008</span>
-	<span class="n">rawSweepTriggerArraySize</span> <span class="o">=</span> <span class="mi">68</span>
+	<span class="c">#: C Array size for raw sweep requests</span>
+	<span class="n">_rawDataArrSize</span> <span class="o">=</span> <span class="mi">299008</span>
 
-	<span class="n">devType</span> <span class="o">=</span> <span class="bp">None</span>
+	<span class="c">#: Raw sweep trigger C array size</span>
+	<span class="n">_rawSweepTriggerArraySize</span> <span class="o">=</span> <span class="mi">68</span>
+
+	<span class="n">__devType</span> <span class="o">=</span> <span class="bp">None</span>
 
 	<span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -235,7 +240,7 @@
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">devOpen</span> <span class="o">=</span> <span class="bp">True</span>
 
-		<span class="bp">self</span><span class="o">.</span><span class="n">devType</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDeviceType</span><span class="p">()</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_devType</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">getDeviceType</span><span class="p">()</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Opened Device with handle num: </span><span class="si">%s</span><span class="s">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">deviceHandle</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
 </div>
@@ -370,7 +375,7 @@
 			<span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s">&quot;Unknown error!&quot;</span><span class="p">)</span>
 
 		<span class="c"># The raw data array returned by fetchRaw when in streaming mode is the value of return_len * 2 (since each value is two floats)</span>
-		<span class="bp">self</span><span class="o">.</span><span class="n">rawDataArrSize</span> <span class="o">=</span> <span class="n">return_len</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span>
+		<span class="bp">self</span><span class="o">.</span><span class="n">_rawDataArrSize</span> <span class="o">=</span> <span class="n">return_len</span><span class="o">.</span><span class="n">value</span> <span class="o">*</span> <span class="mi">2</span>
 
 		<span class="n">values</span> <span class="o">=</span> <span class="p">{</span>
 			<span class="s">&quot;return_len&quot;</span>      <span class="p">:</span> <span class="n">return_len</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
@@ -621,7 +626,6 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureSweepCoupling"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureSweepCoupling">[docs]</a>	<span class="k">def</span> <span class="nf">configureSweepCoupling</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rbw</span><span class="p">,</span> <span class="n">vbw</span><span class="p">,</span> <span class="n">sweepTime</span><span class="p">,</span> <span class="n">rbwType</span><span class="p">,</span> <span class="n">rejection</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureSweepCoupling(int device, double rbw, double vbw, double sweepTime, unsigned int rbwType, unsigned int rejection);</span>
 
 <span class="sd">		Args</span>
 <span class="sd">			rbw (float): Resolution bandwidth in Hz. Use the bandwidth table in the appendix to</span>
@@ -717,6 +721,7 @@
 <span class="sd">			         0.602        268435456</span>
 <span class="sd">			         0.301        536870912</span>
 
+<span class="sd">		Raw Call: ``BB_API bbStatus bbConfigureSweepCoupling(int device, double rbw, double vbw, double sweepTime, unsigned int rbwType, unsigned int rejection);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 
@@ -801,7 +806,7 @@
 <span class="sd">		For each given decimation rate, a maximum bandwidth value must be supplied to account for sufficient</span>
 <span class="sd">		filter rolloff. That table is above. See  bbFetchRaw() for polling the IQ data stream</span>
 
-<span class="sd">		BB_API bbStatus bbConfigureIQ(int device, int downsampleFactor, double bandwidth);</span>
+<span class="sd">		Raw Call: ``BB_API bbStatus bbConfigureIQ(int device, int downsampleFactor, double bandwidth);``</span>
 
 <span class="sd">		&#39;&#39;&#39;</span>
 
@@ -836,7 +841,6 @@
 <div class="viewcode-block" id="SignalHound.configureWindow"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureWindow">[docs]</a>	<span class="k">def</span> <span class="nf">configureWindow</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">		Args:</span>
-<span class="sd">			device:  Handle to the device being configured.</span>
 <span class="sd">			window:  The possible values for window are BB_NUTALL, BB_BLACKMAN,</span>
 <span class="sd">					BB_HAMMING, and BB_FLAT_TOP.</span>
 
@@ -845,7 +849,7 @@
 <span class="sd">		changeable when using the BB_NATIVE_RBW type in bbConfigureSweepCoupling. When using</span>
 <span class="sd">		BB_NON_NATIVE_RBWs, a custom flattop window will be used.</span>
 
-<span class="sd">		BB_API bbStatus bbConfigureWindow(int device, unsigned int window);</span>
+<span class="sd">		Raw Call: ``BB_API bbStatus bbConfigureWindow(int device, unsigned int window);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 
@@ -887,7 +891,6 @@
 		<span class="sd">&#39;&#39;&#39;</span>
 
 <span class="sd">		Args:</span>
-<span class="sd">			device:  Handle to the device being configured.</span>
 <span class="sd">			units:  The possible values are BB_LOG, BB_VOLTAGE, BB_POWER, and</span>
 <span class="sd">					BB_BYPASS.</span>
 
@@ -904,7 +907,7 @@
 <span class="sd">			BB_POWER    = mW</span>
 <span class="sd">			BB_BYPASS   = No video processing</span>
 
-<span class="sd">		BB_API bbStatus bbConfigureProcUnits(int device, unsigned int units);</span>
+<span class="sd">		Raw Call: ``BB_API bbStatus bbConfigureProcUnits(int device, unsigned int units);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">acq_conf</span><span class="p">[</span><span class="s">&quot;data_units&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">units</span>
@@ -940,7 +943,6 @@
 <div class="viewcode-block" id="SignalHound.configureTrigger"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureTrigger">[docs]</a>	<span class="k">def</span> <span class="nf">configureTrigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigType</span><span class="p">,</span> <span class="n">edge</span><span class="p">,</span> <span class="n">level</span><span class="p">,</span> <span class="n">timeout</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
 <span class="sd">		Args:</span>
-<span class="sd">			device:  Handle to the device being configured.</span>
 <span class="sd">			type:  Specifies the type of trigger to use. Possible values are</span>
 <span class="sd">				BB_NO_TRIGGER, BB_VIDEO_TRIGGER, BB_EXTERNAL_TRIGGER, and</span>
 <span class="sd">				BB_GPS_PPS_TRIGGER. If an external signal is desired, BNC port 2 must</span>
@@ -969,7 +971,7 @@
 <span class="sd">		trigger event. This provide a slight view of occurances directly before the event. If no trigger event is</span>
 <span class="sd">		found, the data returned at the end of the timeout period is returned.</span>
 
-<span class="sd">		BB_API bbStatus bbConfigureTrigger(int device, unsigned int type, unsigned int edge, double level, double timeout);</span>
+<span class="sd">		Raw Call: ``BB_API bbStatus bbConfigureTrigger(int device, unsigned int type, unsigned int edge, double level, double timeout);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Setting device trigger configuration.&quot;</span><span class="p">)</span>
@@ -1028,7 +1030,6 @@
 		<span class="sd">&#39;&#39;&#39;</span>
 
 <span class="sd">		Args:</span>
-<span class="sd">			device:  Handle to the device being configured.</span>
 <span class="sd">			delay:  The time in seconds, from the trigger to the beginning of the gate</span>
 <span class="sd">			length:  The length in seconds, of the gate</span>
 <span class="sd">			timeout:  The time in seconds to wait for a trigger. If no trigger is found, the last</span>
@@ -1038,7 +1039,7 @@
 
 <span class="sd">		Therefore it is necessary to use bbConfigureIO to setup an external trigger.</span>
 
-<span class="sd">		BB_API bbStatus bbConfigureTimeGate(int device, double delay, double length, double timeout);</span>
+<span class="sd">		Raw Call: ``BB_API bbStatus bbConfigureTimeGate(int device, double delay, double length, double timeout);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Setting device external trigger time-gating settings.&quot;</span><span class="p">)</span>
@@ -1062,15 +1063,16 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureRawSweep"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureRawSweep">[docs]</a>	<span class="k">def</span> <span class="nf">configureRawSweep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">ppf</span><span class="p">,</span> <span class="n">steps</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureRawSweep(int device, int start, int ppf, int steps, int stepsize);</span>
-<span class="sd">		device  Handle to the device being configured.</span>
-<span class="sd">		start  Frequency value in MHz representing the center of the first 20MHz step</span>
-<span class="sd">			in the sweep. Must be a multiple of 20, and no less than 20.</span>
-<span class="sd">		ppf  Controls the amount of digital samples to collect at each frequency</span>
-<span class="sd">			step. The number of digital samples collected at each frequency equals</span>
-<span class="sd">			18688 * ppf.</span>
-<span class="sd">		steps  Number of steps to take starting with and including the first steps.</span>
-<span class="sd">		stepsize  Value must be BB_TWENTY_MHZ</span>
+<span class="sd">		Raw Call: ``BB_API bbStatus bbConfigureRawSweep(int device, int start, int ppf, int steps, int stepsize);``</span>
+
+<span class="sd">		Args:</span>
+<span class="sd">			start:  Frequency value in MHz representing the center of the first 20MHz step</span>
+<span class="sd">				in the sweep. Must be a multiple of 20, and no less than 20.</span>
+<span class="sd">			ppf:  Controls the amount of digital samples to collect at each frequency</span>
+<span class="sd">				step. The number of digital samples collected at each frequency equals</span>
+<span class="sd">				18688 * ppf.</span>
+<span class="sd">			steps:  Number of steps to take starting with and including the first steps.</span>
+<span class="sd">			stepsize:  Value must be BB_TWENTY_MHZ</span>
 
 <span class="sd">		This function configures the device for both BB_RAW_SWEEP and BB_RAW_SWEEP_LOOP modes. This</span>
 <span class="sd">		function allows you to configure the sweep start frequency, the number of 20 MHz steps to take across</span>
@@ -1110,42 +1112,46 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureIO"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureIO">[docs]</a>	<span class="k">def</span> <span class="nf">configureIO</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">port1Coupling</span><span class="p">,</span> <span class="n">port1mode</span><span class="p">,</span> <span class="n">port2mode</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureIO(int device, unsigned int port1, unsigned int port2);</span>
-<span class="sd">		device  Handle to the device being configured.</span>
-<span class="sd">		port1  The first BNC port may be used to input or output a 10 MHz time base</span>
-<span class="sd">			(AC or DC coupled), or to generate a general purpose logic high/low</span>
-<span class="sd">			output. Please refer to the example below. All possible values for this</span>
-<span class="sd">			port are found in the header file and are prefixed with “BB_PORT1”</span>
-<span class="sd">		port2  Port 2 is capable of accepting an external trigger or generating a logic</span>
-<span class="sd">			output. Port 2 is always DC coupled. All possible values for this port are</span>
-<span class="sd">			found in the header file and are prefixed with “BB_PORT2.”</span>
+
+<span class="sd">		Args:</span>
+<span class="sd">			port1:  The first BNC port may be used to input or output a 10 MHz time base</span>
+<span class="sd">				(AC or DC coupled), or to generate a general purpose logic high/low</span>
+<span class="sd">				output. Please refer to the example below. All possible values for this</span>
+<span class="sd">				port are found in the header file and are prefixed with “BB_PORT1”</span>
+<span class="sd">			port2:  Port 2 is capable of accepting an external trigger or generating a logic</span>
+<span class="sd">				output. Port 2 is always DC coupled. All possible values for this port are</span>
+<span class="sd">				found in the header file and are prefixed with “BB_PORT2.”</span>
 
 <span class="sd">		NOTE: This function can only be called when the device is idle (not operating in any mode). To ensure</span>
 <span class="sd">		the device is idle, call bbAbort().</span>
+
 <span class="sd">		There are two configurable BNC connector ports available on the device. Both ports functionality are</span>
 <span class="sd">		changed with this function. For both ports, ‘0’ is the default and can be supplied through this function to</span>
 <span class="sd">		return the ports to their default values. Specifying a ‘0’ on port 1 returns the device to an internal time</span>
 <span class="sd">		base and outputs the time base AC coupled. Specifying ‘0’ on port 2 emits a DC coupled logic low.</span>
-<span class="sd">		For external 10 MHz timebases, best phase noise is achieved by using a low jitter 3.3V CMOS input.</span>
-<span class="sd">		Configure combinations</span>
 
+<span class="sd">		For external 10 MHz timebases, best phase noise is achieved by using a low jitter 3.3V CMOS input.</span>
+
+<span class="sd">		Configure combinations</span>
 
 <span class="sd">		Port 1 IO  For port 1 only a coupled value must be ‘OR’ed</span>
 <span class="sd">		together with a port type. Use the ‘|’ operator to</span>
 <span class="sd">		combine a coupled type and a port type.</span>
 
-<span class="sd">		BB_PORT1_AC_COUPLED               Denotes an AC coupled port</span>
-<span class="sd">		BB_PORT1_DC_COUPLED               Denotes a DC coupled port</span>
-<span class="sd">		BB_PORT1_INT_REF_OUT              Output the internal 10 MHz timebase</span>
-<span class="sd">		BB_PORT1_EXT_REF_IN               Accept an external 10MHz time base</span>
-<span class="sd">		BB_PORT1_OUT_LOGIC_LOW            Self-explanitory</span>
-<span class="sd">		BB_PORT1_OUT_LOGIC_HIGH           Self-explanitory</span>
+<span class="sd">		 - ``BB_PORT1_AC_COUPLED``               Denotes an AC coupled port</span>
+<span class="sd">		 - ``BB_PORT1_DC_COUPLED``               Denotes a DC coupled port</span>
+<span class="sd">		 - ``BB_PORT1_INT_REF_OUT``              Output the internal 10 MHz timebase</span>
+<span class="sd">		 - ``BB_PORT1_EXT_REF_IN``               Accept an external 10MHz time base</span>
+<span class="sd">		 - ``BB_PORT1_OUT_LOGIC_LOW``            Self-explanitory</span>
+<span class="sd">		 - ``BB_PORT1_OUT_LOGIC_HIGH``           Self-explanitory</span>
 
 <span class="sd">		Port 2 IO</span>
-<span class="sd">		BB_PORT2_OUT_LOGIC_LOW            Self-explanitory</span>
-<span class="sd">		BB_PORT2_OUT_LOGIC_HIGH           Self-explanitory</span>
-<span class="sd">		BB_PORT2_IN_TRIGGER_RISING_EDGE   When set, the device is notified of a rising edge</span>
-<span class="sd">		BB_PORT_IN_TRIGGER_FALLING_EDGE   When set, the device is notified of a falling edge</span>
+<span class="sd">		 - ``BB_PORT2_OUT_LOGIC_LOW``            Self-explanitory</span>
+<span class="sd">		 - ``BB_PORT2_OUT_LOGIC_HIGH``           Self-explanitory</span>
+<span class="sd">		 - ``BB_PORT2_IN_TRIGGER_RISING_EDGE``   When set, the device is notified of a rising edge</span>
+<span class="sd">		 - ``BB_PORT_IN_TRIGGER_FALLING_EDGE``   When set, the device is notified of a falling edge</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbConfigureIO(int device, unsigned int port1, unsigned int port2);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Setting device IO Configuration.&quot;</span><span class="p">)</span>
@@ -1209,21 +1215,21 @@
 </div>
 <div class="viewcode-block" id="SignalHound.configureDemod"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.configureDemod">[docs]</a>	<span class="k">def</span> <span class="nf">configureDemod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">modulationType</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">ifBw</span><span class="p">,</span> <span class="n">audioLowPassFreq</span><span class="p">,</span> <span class="n">audioHighPassFreq</span><span class="p">,</span> <span class="n">fmDeemphasis</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbConfigureDemod(int device, int modulationType, double freq, float IFBW, float audioLowPassFreq, float audioHighPassFreq, float FMDeemphasis);</span>
-
-<span class="sd">		device  Handle to the device being configured.</span>
-<span class="sd">		modulationType  Specifies the demodulation scheme, possible values are</span>
-<span class="sd">				BB_DEMOD_AM/FM/Upper sideband (USB)/Lower Sideband (LSB)/CW.</span>
-<span class="sd">		freq  Center frequency. For best results, re-initiate the device if the center frequency changes +/- 8MHz from the initial value.</span>
-<span class="sd">		IFBW  Intermediate frequency bandwidth centered on freq. Filter takes place</span>
-<span class="sd">				before demodulation. Specified in Hz. Should be between 2kHz and 500kHz.</span>
-<span class="sd">		audioLowPassFreq  Post demodulation filter in Hz. Should be between 1kHz and 12kHz Hz.</span>
-<span class="sd">		audioHighPassFreq  Post demodulation filter in Hz. Should be between 20 and 1000Hz.</span>
-<span class="sd">		FMDeemphasis  Specified in micro-seconds. Should be between 1 and 100.</span>
+<span class="sd">		Args:</span>
+<span class="sd">			modulationType:  Specifies the demodulation scheme, possible values are</span>
+<span class="sd">					BB_DEMOD_AM/FM/Upper sideband (USB)/Lower Sideband (LSB)/CW.</span>
+<span class="sd">			freq:  Center frequency. For best results, re-initiate the device if the center frequency changes +/- 8MHz from the initial value.</span>
+<span class="sd">			IFBW:  Intermediate frequency bandwidth centered on freq. Filter takes place</span>
+<span class="sd">					before demodulation. Specified in Hz. Should be between 2kHz and 500kHz.</span>
+<span class="sd">			audioLowPassFreq:  Post demodulation filter in Hz. Should be between 1kHz and 12kHz Hz.</span>
+<span class="sd">			audioHighPassFreq:  Post demodulation filter in Hz. Should be between 20 and 1000Hz.</span>
+<span class="sd">			FMDeemphasis:  Specified in micro-seconds. Should be between 1 and 100.</span>
 
 <span class="sd">		This function can be called while the device is active.</span>
 <span class="sd">		Note : If any of the boundary conditions are not met, this function will return with no error but the</span>
 <span class="sd">		values will be clamped to its boundary values</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbConfigureDemod(int device, int modulationType, double freq, float IFBW, float audioLowPassFreq, float audioHighPassFreq, float FMDeemphasis);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Setting device demodulator Configuration.&quot;</span><span class="p">)</span>
@@ -1274,26 +1280,28 @@
 </div>
 <div class="viewcode-block" id="SignalHound.initiate"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.initiate">[docs]</a>	<span class="k">def</span> <span class="nf">initiate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">flag</span><span class="p">,</span> <span class="n">gps_timestamp</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbInitiate(int device, unsigned int mode, unsigned int flag);</span>
-
-<span class="sd">		device  Handle to the device being configured.</span>
-<span class="sd">		mode  The possible values for mode are BB_SWEEPING, BB_REAL_TIME,</span>
-<span class="sd">			BB_ZERO_SPAN, BB_TIME_GATE, BB_RAW_SWEEP,</span>
-<span class="sd">			BB_RAW_SWEEP_LOOP and BB_AUDIO_DEMOD.</span>
-<span class="sd">		flag  The default value is zero.</span>
-<span class="sd">			If mode equals BB_ZERO_SPAN, flag can be used to denote the type of</span>
-<span class="sd">			modulation performed on the incoming signal. BB_DEMOD_AM and</span>
-<span class="sd">			BB_DEMOD_FM are the two options.</span>
-<span class="sd">			Flag can be used to inform the API to time</span>
-<span class="sd">			stamp data using an external GPS reciever. Mask the bandwidth flag (‘|’</span>
-<span class="sd">			in C) with BB_TIME_STAMP to achieve this. See Appendix:Using a GPS</span>
-<span class="sd">			Receiver to Time-Stamp Data for information on how to set this up.</span>
+<span class="sd">		Args:</span>
+<span class="sd">			mode:  The possible values for mode are BB_SWEEPING, BB_REAL_TIME,</span>
+<span class="sd">				BB_ZERO_SPAN, BB_TIME_GATE, BB_RAW_SWEEP,</span>
+<span class="sd">				BB_RAW_SWEEP_LOOP and BB_AUDIO_DEMOD.</span>
+<span class="sd">			flag:  The default value is zero.</span>
+<span class="sd">				If mode equals BB_ZERO_SPAN, flag can be used to denote the type of</span>
+<span class="sd">				modulation performed on the incoming signal. BB_DEMOD_AM and</span>
+<span class="sd">				BB_DEMOD_FM are the two options.</span>
+<span class="sd">				Flag can be used to inform the API to time</span>
+<span class="sd">				stamp data using an external GPS reciever. Mask the bandwidth flag (‘|’</span>
+<span class="sd">				in C) with BB_TIME_STAMP to achieve this. See Appendix:Using a GPS</span>
+<span class="sd">				Receiver to Time-Stamp Data for information on how to set this up.</span>
+<span class="sd">			gps_timestamp (bool): Timestamp using GPS</span>
 
 <span class="sd">		bbInitiate configures the device into a state determined by the mode parameter. For more information</span>
 <span class="sd">		regarding operating states, refer to the Theory of Operation and Modes of Operation sections. This</span>
 <span class="sd">		function calls bbAbort before attempting to reconfigure. It should be noted, if an error is returned, any</span>
 <span class="sd">		past operating state will no longer be active.</span>
+
 <span class="sd">		Pay special attention to the bbInvalidParameterErr description below</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbInitiate(int device, unsigned int mode, unsigned int flag);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">acq_conf</span><span class="p">[</span><span class="s">&quot;acq_mode&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mode</span>
@@ -1345,13 +1353,13 @@
 			<span class="k">elif</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acq_conf</span><span class="p">[</span><span class="s">&quot;span_freq&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">hf</span><span class="o">.</span><span class="n">BB60C_MAX_RT_SPAN</span> <span class="ow">or</span>
 				<span class="bp">self</span><span class="o">.</span><span class="n">acq_conf</span><span class="p">[</span><span class="s">&quot;span_freq&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">hf</span><span class="o">.</span><span class="n">BB_MIN_RT_SPAN</span> <span class="p">):</span>
 
-				<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">devType</span><span class="p">:</span>
+				<span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devType</span><span class="p">:</span>
 					<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Device type not detected? How did this even occur!&quot;</span><span class="p">)</span>
-				<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">devType</span> <span class="o">==</span> <span class="s">&quot;BB60C&quot;</span><span class="p">:</span>
+				<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devType</span> <span class="o">==</span> <span class="s">&quot;BB60C&quot;</span><span class="p">:</span>
 					<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acq_conf</span><span class="p">[</span><span class="s">&quot;span_freq&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">hf</span><span class="o">.</span><span class="n">BB60C_MAX_RT_SPAN</span><span class="p">:</span>
 						<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Real-time mode maximum span frequency is 27 Mhz for the BB60C. Specified span frequency = </span><span class="si">%f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">acq_conf</span><span class="p">[</span><span class="s">&quot;span_freq&quot;</span><span class="p">])</span>
 
-				<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">devType</span> <span class="o">==</span> <span class="s">&quot;BB60A&quot;</span><span class="p">:</span>
+				<span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_devType</span> <span class="o">==</span> <span class="s">&quot;BB60A&quot;</span><span class="p">:</span>
 					<span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acq_conf</span><span class="p">[</span><span class="s">&quot;span_freq&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">hf</span><span class="o">.</span><span class="n">BB60A_MAX_RT_SPAN</span><span class="p">:</span>
 						<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s">&quot;Real-time mode maximum span frequency is 20 Mhz for the BB60A. Specified span frequency = </span><span class="si">%f</span><span class="s">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">acq_conf</span><span class="p">[</span><span class="s">&quot;span_freq&quot;</span><span class="p">])</span>
 
@@ -1396,18 +1404,17 @@
 </div>
 <div class="viewcode-block" id="SignalHound.fetchTrace"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.fetchTrace">[docs]</a>	<span class="k">def</span> <span class="nf">fetchTrace</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbFetchTrace(int device, int arraySize, double *min, double *max);</span>
-<span class="sd">		device  Handle of an initialized device.</span>
-<span class="sd">		arraySize  A provided arraySize. This value must be equal to or greater than the</span>
-<span class="sd">		traceSize value returned from bbQueryTraceInfo.</span>
-<span class="sd">				min  Pointer to a double buffer, whose length is equal to or greater than</span>
-<span class="sd">		traceSize returned from bbQueryTraceInfo.</span>
-<span class="sd">				max  Pointer to a double buffer, whose length is equal to or greater than</span>
-<span class="sd">		traceSize returned from bbQueryTraceInfo.</span>
+<span class="sd">		Args:</span>
+<span class="sd">			None</span>
+
+<span class="sd">		Returns:</span>
+<span class="sd">			dictionary containing the ``min`` and ``max`` arrays with eponymous keys.</span>
 
 <span class="sd">		Returns a minimum and maximum array of values relating to the current mode of operation. If the</span>
-<span class="sd">		detectorType provided in bbConfigureAcquisition is BB_AVERAGE, the array will be populated with the</span>
-<span class="sd">		same values. Element zero of each array corresponds to the startFreq returned from bbQueryTraceInfo.</span>
+<span class="sd">		detectorType provided in bbConfigureAcquisition is BB_AVERAGE, the arrays will contain identical</span>
+<span class="sd">		values. Element zero of each array corresponds to the startFreq returned from bbQueryTraceInfo.</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbFetchTrace(int device, int arraySize, double *min, double *max);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="k">try</span><span class="p">:</span>
@@ -1475,16 +1482,16 @@
 </div>
 <div class="viewcode-block" id="SignalHound.fetchAudio"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.fetchAudio">[docs]</a>	<span class="k">def</span> <span class="nf">fetchAudio</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbFetchAudio(int device, float *audio);</span>
-
-<span class="sd">		device  Handle of an initialized device.</span>
-<span class="sd">		audio  Pointer to an array of 4096 32-bit floating point values</span>
+<span class="sd">		Returns:</span>
+<span class="sd">			Numpy array of 4096 32-bit floating point values</span>
 
 <span class="sd">		If the device is initiated and running in the audio demodulation mode, the function is a blocking call</span>
 <span class="sd">		which returns the next 4096 audio samples. The approximate blocking time for this function is 128 ms if</span>
 <span class="sd">		called again immediately after returning. There is no internal buffering of audio, meaning the audio will</span>
 <span class="sd">		be overwritten if this function is not called in a timely fashion. The audio values are typically -1.0 to 1.0,</span>
 <span class="sd">		representing full-scale audio. In FM mode, the audio values will scale with a change in IF bandwidth.</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbFetchAudio(int device, float *audio);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="n">arraySize</span> <span class="o">=</span> <span class="mi">4096</span>
@@ -1513,12 +1520,12 @@
 </div>
 <div class="viewcode-block" id="SignalHound.fetchRawCorrections"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.fetchRawCorrections">[docs]</a>	<span class="k">def</span> <span class="nf">fetchRawCorrections</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbFetchRawCorrections(int device, float *corrections, int *index, double *startFreq);</span>
 
-<span class="sd">		device        Handle of an initialized device.</span>
-<span class="sd">		corrections   32-bit float array of length 2048. Correction values are decibel.</span>
-<span class="sd">		index         Index into the corrections array where the correction data begins.</span>
-<span class="sd">		startFreq      Frequency associated with the correction at index.</span>
+<span class="sd">		Returns:</span>
+<span class="sd">			| ``dict`` containing:</span>
+<span class="sd">			|	 - ``corrections``   32-bit float array of length 2048. Correction values are decibel.</span>
+<span class="sd">			|	 - ``index``         Index into the corrections array where the correction data begins.</span>
+<span class="sd">			|	 - ``startFreq``      Frequency associated with the correction at index.</span>
 
 <span class="sd">		When this function returns successfully, the correction array will contain the frequency domain</span>
 <span class="sd">		correction constants for the given bandwidth chosen. The corrections are modified based on</span>
@@ -1532,6 +1539,7 @@
 <span class="sd">		startFreq. The bin size of each index is implied through 40 MHz divided by the length of the array,</span>
 <span class="sd">		(40.0e6 / 2048) = 19531.25 Hz. If an Fourier transform is applied on the IF data, the correction values</span>
 <span class="sd">		will line up with the usable 20 MHz bandwdith.</span>
+
 <span class="sd">		7MHz</span>
 <span class="sd">		The correction array represents 10 Mhz of bandwdith where the usable 7 MHz is centered and all values</span>
 <span class="sd">		outside the usable 7 MHz is zeroed. The index returned is the first non zero sample in the array. The</span>
@@ -1539,12 +1547,15 @@
 <span class="sd">		frequency can be determined with the bin size. The bin size for this array is (10.0e6 / 2048) = 4882.8125</span>
 <span class="sd">		Hz. If a complex Fourier Transform is applied to the IQ data, the correction values will line up with the</span>
 <span class="sd">		usable 7 MHz bandwidth.</span>
-<span class="sd">		Tips</span>
+
+<span class="sd">		##Tips</span>
+
 <span class="sd">		Time domain corrections of the signal’s amplitude require two steps. First, an inverse Fourier Transform</span>
 <span class="sd">		must be performed on the entire correction array (including zero’ed portions). This results in a 4096</span>
 <span class="sd">		sample kernel. Second, the kernel is used in convolution with the time domain data. If a larger/smaller</span>
 <span class="sd">		kernel is desired, interpolate/extrapolate the correction array while it is in the frequency domain to the</span>
 <span class="sd">		desired length. Lengths which are powers of two are suggested.</span>
+
 <span class="sd">		Frequency domain correction of the signal’s amplitude requires you to first transform the raw data into</span>
 <span class="sd">		the frequency domain. Performing an Fourier transform on the incoming data will yeild a frequency</span>
 <span class="sd">		domain array that will align with the correction array. You can index the Transform results using the</span>
@@ -1552,6 +1563,8 @@
 <span class="sd">		are in dB. If larger Transform sizes are desired, you can interpolate the correction array to the desired</span>
 <span class="sd">		size. (Be aware! This will change the index of the first non-zero correction, but the results of the FFT will</span>
 <span class="sd">		still align the with usable 20 MHz)</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbFetchRawCorrections(int device, float *corrections, int *index, double *startFreq);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="n">arraySize</span> <span class="o">=</span> <span class="mi">2048</span>
@@ -1588,31 +1601,34 @@
 </div>
 	<span class="nd">@classmethod</span>
 <div class="viewcode-block" id="SignalHound.getRawSweep_size"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.getRawSweep_size">[docs]</a>	<span class="k">def</span> <span class="nf">getRawSweep_size</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
-		<span class="k">return</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_float</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">rawDataArrSize</span>
+		<span class="k">return</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_float</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">_rawDataArrSize</span>
 </div>
 	<span class="nd">@classmethod</span>
 <div class="viewcode-block" id="SignalHound.getRawSweep_s_size"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.getRawSweep_s_size">[docs]</a>	<span class="k">def</span> <span class="nf">getRawSweep_s_size</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
-		<span class="k">return</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_short</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">rawDataArrSize</span>
+		<span class="k">return</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_short</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">_rawDataArrSize</span>
 </div>
 	<span class="nd">@classmethod</span>
 <div class="viewcode-block" id="SignalHound.getRawSweepTrig_size"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.getRawSweepTrig_size">[docs]</a>	<span class="k">def</span> <span class="nf">getRawSweepTrig_size</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
-		<span class="k">return</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">rawSweepTriggerArraySize</span>
+		<span class="k">return</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_int</span><span class="p">,</span> <span class="n">cls</span><span class="o">.</span><span class="n">_rawSweepTriggerArraySize</span>
 
 
 
 </div>
 <div class="viewcode-block" id="SignalHound.fetchRawSweep"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.fetchRawSweep">[docs]</a>	<span class="k">def</span> <span class="nf">fetchRawSweep</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbFetchRawSweep(int device, short *buffer);</span>
-
-<span class="sd">		device  Handle of an initialized device.</span>
-<span class="sd">		buffer  Pointer to an array of signed short integers</span>
+<span class="sd">		returns:</span>
+<span class="sd">			Numpy array of signed short integers</span>
 
 <span class="sd">		This function is used to collect a single sweep for a device configured in raw sweep mode. The length of</span>
 <span class="sd">		the buffer provided is determined by the settings used to configure the device for raw sweep mode. This</span>
 <span class="sd">		length can be determined using the equation.</span>
-<span class="sd">				Buffer-Length = 18688 * ppf * steps</span>
+
+<span class="sd">		Buffer-Length = 18688 * ppf * steps</span>
+
 <span class="sd">		If the function returns successfully the array will contain a full sweep. The shorts will</span>
+
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbFetchRawSweep(int device, short *buffer);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="k">try</span><span class="p">:</span>
@@ -1651,19 +1667,23 @@
 </div>
 <div class="viewcode-block" id="SignalHound.startRawSweepLoop"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.startRawSweepLoop">[docs]</a>	<span class="k">def</span> <span class="nf">startRawSweepLoop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callbackFunc</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbStartRawSweepLoop(int device, void(*sweep_callback)(short *buffer, int len));</span>
-
-<span class="sd">		device  Handle of an initialized device.</span>
-<span class="sd">		sweep_callback  Pointer to a C function. Used as a callback to notify the user of</span>
+<span class="sd">		Args:</span>
+<span class="sd">			callbackFunc: Python function. Used as a callback to notify the user of</span>
 <span class="sd">				completed sweeps.</span>
 
 <span class="sd">		This function can be called after being configured and initiated in RAW_SWEEP_LOOP mode. The device</span>
 <span class="sd">		begins sweeping on the first call to this function after the device has been initiated. It is possible to call</span>
 <span class="sd">		this function multiple times per initiate to change the function call back used.</span>
+
 <span class="sd">		If this function returns successfully, the device begins sweeping immediately. The function provided is</span>
 <span class="sd">		set as the callback function used when a sweep is completed. sweep_callback is called once per sweep</span>
-<span class="sd">		completion. The function passes two parameters, a pointer to the buffer of data for the sweep, and the</span>
-<span class="sd">		length of the buffer.</span>
+<span class="sd">		completion. The function is passed two parameters, a pointer to the buffer of data for the sweep, and the</span>
+<span class="sd">		length of the buffer, both ``ctypes`` variables: ``(bufPtr, bufLen)``.</span>
+
+<span class="sd">		To properly decode the passed parameters, you should use the ``SignalHound.decodeRawSweep`` staticmethod.</span>
+<span class="sd">		This takes the two ctypes arguments in the order they are passed to the callback function, and returns</span>
+<span class="sd">		a python numpy array.</span>
+
 <span class="sd">		The data buffer will not be overwritten when in the function body of sweep_callback. The API will</span>
 <span class="sd">		maintain a circular list of buffers to store sweeps in. The API will store up to ¼ to ½ seconds worth of</span>
 <span class="sd">		sweeps depending on parameters. If the function body of sweep_callback exceeds this amount of time,</span>
@@ -1671,14 +1691,19 @@
 <span class="sd">		will cause a loss of data. It is recommended the function body of sweep_callback is short, preferably</span>
 <span class="sd">		simply copying the data from buffer into your own data structure. This ensures you receive every sweep</span>
 <span class="sd">		and make your own decisions on when to drop/ignore sweeps.</span>
+
 <span class="sd">		The sweep_callback function is not called in the main thread of execution. It is called once per sweep,</span>
 <span class="sd">		which can result in the function being called anywhere from 3-250 milliseconds. It is the responsibility of</span>
 <span class="sd">		the user to not index the buffer out of range. The buffer contents can be modified by the user only</span>
 <span class="sd">		during the function body of sweep_callback, once the function returns, the API is free to overwrite the</span>
 <span class="sd">		contents. Modifying the contents of the buffer not in the function body of sweep_callback is undefined.</span>
+
 <span class="sd">		The user should not attempt to manage any of the memory provided through the buffer pointers.</span>
+
 <span class="sd">		The device sweeps indefinitely until bbAbort or bbCloseDevice is called. When operation is suspended</span>
 <span class="sd">		via bbAbort, the device must be reconfigured and initiated again before calling this function.</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbStartRawSweepLoop(int device, void(*sweep_callback)(short *buffer, int len));``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">callbackFunc</span><span class="p">):</span>
@@ -1703,25 +1728,23 @@
 </div>
 <div class="viewcode-block" id="SignalHound.queryTraceInfo"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.queryTraceInfo">[docs]</a>	<span class="k">def</span> <span class="nf">queryTraceInfo</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbQueryTraceInfo(int device, unsigned int *traceLen, double *binSize, double *start);</span>
-
-<span class="sd">		device  Handle of an initialized device.</span>
-<span class="sd">		traceLen  A pointer to an unsigned int. If the function returns successfully</span>
-<span class="sd">				traceLen will contain the size of arrays returned by bbFetchTrace.</span>
-<span class="sd">		binSize  A pointer to a 64bit floating point variable. If the function returns</span>
-<span class="sd">				successfully, binSize will contain the frequency difference between two</span>
-<span class="sd">				sequential bins in a returned sweep. In Zero-Span mode, binSize refers</span>
-<span class="sd">				to the difference between sequential samples in seconds.</span>
-<span class="sd">		start  A pointer to a 64bit floating point variable. If the function returns</span>
-<span class="sd">				successfully, start will contain the frequency of the first bin in a</span>
-<span class="sd">				returned sweep. In Zero-Span mode, start represents the exact center</span>
-<span class="sd">				frequency used by the API.</span>
+<span class="sd">		Returns:</span>
+<span class="sd">			| ``dict`` containing:</span>
+<span class="sd">			|	&quot;arr-size&quot;: The size of arrays returned by bbFetchTrace.</span>
+<span class="sd">			|	&quot;arr-bin-size&quot;:  The frequency difference between two</span>
+<span class="sd">			|			sequential bins in a returned sweep. In Zero-Span mode, binSize refers</span>
+<span class="sd">			|			to the difference between sequential samples in seconds.</span>
+<span class="sd">			|	&quot;ret-start-freq&quot;:  The frequency of the first bin in a</span>
+<span class="sd">			|			returned sweep. In Zero-Span mode, start represents the exact center</span>
+<span class="sd">			|			frequency used by the API.</span>
 
 <span class="sd">		This function should be called to determine sweep characteristics after a device has been configured</span>
 <span class="sd">		and initiated. For zero-span mode, startFreq and binSize will refer to the time domain values. In zero-</span>
 <span class="sd">		span mode startFreq will always be zero, and binSize will be equal to sweepTime/traceSize.</span>
 
 <span class="sd">		Note: Calling while in BB_RAW_PIPE mode will produce a bbDeviceNotConfiguredErr</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbQueryTraceInfo(int device, unsigned int *traceLen, double *binSize, double *start);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="c"># self.log.info(&quot;Querying device for trace information.&quot;)</span>
@@ -1756,14 +1779,15 @@
 </div>
 <div class="viewcode-block" id="SignalHound.queryStreamingCenter"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.queryStreamingCenter">[docs]</a>	<span class="k">def</span> <span class="nf">queryStreamingCenter</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbQueryStreamingCenter(int device, double *center);</span>
-<span class="sd">		device  Handle of an initialized device.</span>
-<span class="sd">		center  Pointer to a double which will receive the absolute center frequency of</span>
+<span class="sd">		Returns:</span>
+<span class="sd">			A Double containing the absolute center frequency of</span>
 <span class="sd">				the streaming device.</span>
 
 <span class="sd">		The function retrieves the center frequency of the 20 MHz IF bandwidth of a device currently initialized</span>
 <span class="sd">		in raw pipe mode. The center returned is representative of ¼ of the IF sample rate. The 20 MHz of usable</span>
 <span class="sd">		bandwidth is centered on this frequency.</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbQueryStreamingCenter(int device, double *center);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Querying device for streaming center-freqency.&quot;</span><span class="p">)</span>
@@ -1791,17 +1815,19 @@
 </div>
 <div class="viewcode-block" id="SignalHound.queryTimestamp"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.queryTimestamp">[docs]</a>	<span class="k">def</span> <span class="nf">queryTimestamp</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbQueryTimestamp(int device, unsigned int *seconds, unsigned int *nanoseconds);</span>
 
-<span class="sd">		device  Handle of an initialized device.</span>
-<span class="sd">		seconds  Seconds since midnight (00:00:00), January 1, 1970, coordinated</span>
-<span class="sd">				universal time(UTC).</span>
-<span class="sd">		nanoseconds  nanoseconds between seconds and seconds + 1</span>
+<span class="sd">		Returns:</span>
+<span class="sd">			| Two-Tuple containing (in order):</span>
+<span class="sd">			|	seconds  Integer Seconds since midnight (00:00:00), January 1, 1970, coordinated</span>
+<span class="sd">			|			universal time(UTC).</span>
+<span class="sd">			|	nanoseconds  Integer nanoseconds between seconds and seconds + 1</span>
 
 <span class="sd">		This function is used in conjunction with bbSyncCPUtoGPS and a GPS device to retrieve an absolute time</span>
 <span class="sd">		for a data packet in raw pipe mode. This function returns an absolute time for the last packet retrieved</span>
 <span class="sd">		from bbFetchRaw. See the Appendix:Code Examples for information on how to setup and interpret the</span>
 <span class="sd">		time information.</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbQueryTimestamp(int device, unsigned int *seconds, unsigned int *nanoseconds);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Querying device for timestamp.&quot;</span><span class="p">)</span>
@@ -1828,9 +1854,10 @@
 </div>
 <div class="viewcode-block" id="SignalHound.abort"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.abort">[docs]</a>	<span class="k">def</span> <span class="nf">abort</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbAbort(int device);</span>
 
 <span class="sd">		Stops the device operation and places the device into an idle state.</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbAbort(int device);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="c"># cleanup state variables used in various modes.</span>
@@ -1853,7 +1880,6 @@
 </div>
 <div class="viewcode-block" id="SignalHound.preset"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.preset">[docs]</a>	<span class="k">def</span> <span class="nf">preset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbPreset(int device);</span>
 
 <span class="sd">		This function exists to invoke a hard reset of the device. This will function similarly to a power</span>
 <span class="sd">		cycle(unplug/re-plug the device). This might be useful if the device has entered an undesirable or</span>
@@ -1866,6 +1892,8 @@
 <span class="sd">		after 2 seconds. Within this time you must call bbCloseDevice to free any remaining resources and</span>
 <span class="sd">		release the device serial number from the open device list. From the time of the bbPreset call, we</span>
 <span class="sd">		suggest 3 to more seconds of wait time before attempting to re-open the device.</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbPreset(int device);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;Performing hardware-reset of device!&quot;</span><span class="p">)</span>
@@ -1882,24 +1910,28 @@
 </div>
 <div class="viewcode-block" id="SignalHound.selfCal"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.selfCal">[docs]</a>	<span class="k">def</span> <span class="nf">selfCal</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbSelfCal(int device);</span>
 
 <span class="sd">		This function causes the device to recalibrate itself to adjust for internal device temperature changes,</span>
 <span class="sd">		generating an amplitude correction array as a function of IF frequency. This function will explicitly call</span>
 <span class="sd">		bbAbort() to suspend all device operations before performing the calibration, and will return the device</span>
 <span class="sd">		in an idle state and configured as if it was just opened. The state of the device should not be assumed,</span>
 <span class="sd">		and should be fully reconfigured after a self-calibration.</span>
+
 <span class="sd">		Temperature changes of 2 degrees Celsius or more have been shown to measurably alter the</span>
 <span class="sd">		shape/amplitude of the IF. We suggest using bbQueryDiagnostics to monitor the device’s temperature</span>
 <span class="sd">		and perform self-calibrations when needed. Amplitude measurements are not guaranteed to be</span>
 <span class="sd">		accurate otherwise, and large temperature changes (10 ° C or more) may result in adding a dB or more of</span>
 <span class="sd">		error.</span>
+
 <span class="sd">		Because this is a streaming device, we have decided to leave the programmer in full control of when the</span>
 <span class="sd">		device in calibrated. The device is calibrated once upon opening the device through bbOpenDevice and is</span>
 <span class="sd">		the responsibility of the programmer after that.</span>
+
 <span class="sd">		Note:</span>
 <span class="sd">		After calling this function, the device returns to the default state. Currently the API does not retain state</span>
 <span class="sd">		prior to the calling of bbSelfCal(). Fully reconfiguring the device will be necessary.</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbSelfCal(int device);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Performing self-calibration of device.&quot;</span><span class="p">)</span>
@@ -1915,20 +1947,22 @@
 </div>
 <div class="viewcode-block" id="SignalHound.syncCPUtoGPS"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.syncCPUtoGPS">[docs]</a>	<span class="k">def</span> <span class="nf">syncCPUtoGPS</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">comPort</span><span class="p">,</span> <span class="n">baudRate</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbSyncCPUtoGPS(int comPort, int baudRate);</span>
-
-<span class="sd">		comPort  Com port number for the NMEA data output from the GPS reciever.</span>
-<span class="sd">		baudRate  Baud Rate of the Com port</span>
+<span class="sd">		Args:</span>
+<span class="sd">			comPort (integer):  Com port number for the NMEA data output from the GPS reciever.</span>
+<span class="sd">			baudRate (integer):  Baud Rate of the Com port</span>
 
 <span class="sd">		The connection to the COM port is only established for the duration of this function. It is closed when</span>
 <span class="sd">		the function returns. Call this function once before using a GPS PPS signal to time-stamp RF data. The</span>
 <span class="sd">		synchronization will remain valid until the CPU clock drifts more than ¼ second, typically several hours,</span>
 <span class="sd">		and will re-synchronize continually while streaming data using a PPS trigger input.</span>
+
 <span class="sd">		This function calculates the offset between your CPU clock time and the GPS clock time to within a few</span>
 <span class="sd">		milliseconds, and stores this value for time-stamping RF data using the GPS PPS trigger. This function</span>
 <span class="sd">		ignores time zone, limiting the calculated offset to +/- 30 minutes. It was tested using an FTS 500 from</span>
 <span class="sd">		Connor Winfield at 38.4 kbaud. It uses the “$GPRMC” string, so you must set up your GPS to output this</span>
 <span class="sd">		string.</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbSyncCPUtoGPS(int comPort, int baudRate);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s">&quot;GPS Synchronization not yet verified.&quot;</span><span class="p">)</span>
@@ -1952,12 +1986,18 @@
 </div>
 <div class="viewcode-block" id="SignalHound.getDeviceType"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.getDeviceType">[docs]</a>	<span class="k">def</span> <span class="nf">getDeviceType</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbGetDeviceType(int device, int *type);</span>
+<span class="sd">		Returns:</span>
+<span class="sd">			| Ascii string containing device type:</span>
+<span class="sd">			| - &quot;No device&quot;</span>
+<span class="sd">			| - &quot;BB60A&quot;</span>
+<span class="sd">			| - &quot;BB60C&quot;</span>
+<span class="sd">			| - &quot;BB124&quot;</span>
 
 <span class="sd">		This function may be called only after the device has been opened. If the device successfully opened,</span>
 <span class="sd">		type will contain the model type of the device pointed to by handle.</span>
-<span class="sd">		Possible values for type are BB_DEVICE_NONE, BB_DEVICE_BB60A, BB_DEVICE_BB124. These values can</span>
-<span class="sd">		be found in the bb_api header file</span>
+
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbGetDeviceType(int device, int *type);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Querying device for model information&quot;</span><span class="p">)</span>
@@ -1994,10 +2034,13 @@
 </div>
 <div class="viewcode-block" id="SignalHound.getSerialNumber"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.getSerialNumber">[docs]</a>	<span class="k">def</span> <span class="nf">getSerialNumber</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbGetSerialNumber(int device, unsigned int *sid);</span>
+
+<span class="sd">		Returns: Device serial number as a integer.</span>
 
 <span class="sd">		This function may be called only after the device has been opened. The serial number returned should</span>
 <span class="sd">		match the number on the case.</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbGetSerialNumber(int device, unsigned int *sid);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 
@@ -2022,9 +2065,11 @@
 </div>
 <div class="viewcode-block" id="SignalHound.getFirmwareVersion"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.getFirmwareVersion">[docs]</a>	<span class="k">def</span> <span class="nf">getFirmwareVersion</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API bbStatus bbGetFirmwareVersion(int device, int *version);</span>
+<span class="sd">		Returns: Device firmware rev as a integer.</span>
 
 <span class="sd">		Use this function to determine which version of firmware is associated with the specified device.</span>
+
+<span class="sd">		Raw Call: ``BB_API bbStatus bbGetFirmwareVersion(int device, int *version);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">&quot;Querying device for firmware version.&quot;</span><span class="p">)</span>
@@ -2049,14 +2094,19 @@
 </div>
 <div class="viewcode-block" id="SignalHound.getAPIVersion"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.getAPIVersion">[docs]</a>	<span class="k">def</span> <span class="nf">getAPIVersion</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API const char* bbGetAPIVersion();</span>
+
+<span class="sd">		Returns: Device API version as an ascii string.</span>
 
 <span class="sd">		The returned string is of the form</span>
 <span class="sd">		major.minor.revision</span>
+
 <span class="sd">		Ascii periods (“.”) separate positive integers. Major/Minor/Revision are</span>
 <span class="sd">		not gauranteed to be a single decimal digit. The string is null</span>
 <span class="sd">		terminated. An example string is below ..</span>
-<span class="sd">		[ ‘1’ | ‘.’ | ‘2’ | ‘.’ | ‘1’ | ‘1’ | ‘\0’ ] = “1.2.11”</span>
+
+<span class="sd">		``[ ‘1’ | ‘.’ | ‘2’ | ‘.’ | ‘1’ | ‘1’ | ‘\0’ ] = “1.2.11”``</span>
+
+<span class="sd">		Raw Call: ``BB_API const char* bbGetAPIVersion();``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 
@@ -2070,13 +2120,18 @@
 </div>
 <div class="viewcode-block" id="SignalHound.getErrorString"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.getErrorString">[docs]</a>	<span class="k">def</span> <span class="nf">getErrorString</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">errCode</span><span class="p">):</span>
 		<span class="sd">&#39;&#39;&#39;</span>
-<span class="sd">		BB_API const char* bbGetErrorString(bbStatus status);</span>
+<span class="sd">		Args:</span>
+<span class="sd">			errCode (integer): Error code value</span>
+
+<span class="sd">		Returns: Ascii string containing human-readable version of the error code.</span>
 
 <span class="sd">		Produce an ascii string representation of a given status code. Useful for debugging.</span>
 <span class="sd">		Probably not really needed, since I&#39;m doing error decoding locally in each function.</span>
 
 <span class="sd">		This /should/ be of type bbStatus. bbStatus is an enum with hard-coded values, so I&#39;m being lazy, and just using</span>
 <span class="sd">		an int. It works well enough.</span>
+
+<span class="sd">		Raw Call: ``BB_API const char* bbGetErrorString(bbStatus status);``</span>
 <span class="sd">		&#39;&#39;&#39;</span>
 
 		<span class="n">serialNo</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_int</span><span class="p">(</span><span class="n">errCode</span><span class="p">)</span>
@@ -2087,6 +2142,12 @@
 		<span class="k">return</span> <span class="n">ct</span><span class="o">.</span><span class="n">c_char_p</span><span class="p">(</span><span class="n">apiRevStr</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>  <span class="c"># Dereference pointer, extract string, return it.</span>
 </div>
 <div class="viewcode-block" id="SignalHound.getCurrentAcquisitionSettings"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.getCurrentAcquisitionSettings">[docs]</a>	<span class="k">def</span> <span class="nf">getCurrentAcquisitionSettings</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		Return a dictionary containing the return values from ``queryTraceInfo()``, ``getDeviceDiagnostics()`` and the current ``acq_conf``</span>
+
+<span class="sd">		If there is no running acquisition, ``queryTraceInfo()`` will be defaulted to ``{}``</span>
+
+<span class="sd">		&#39;&#39;&#39;</span>
 		<span class="k">try</span><span class="p">:</span>
 			<span class="n">tmp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">queryTraceInfo</span><span class="p">()</span>
 		<span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
@@ -2096,10 +2157,29 @@
 		<span class="n">tmp</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">acq_conf</span><span class="p">)</span>
 
 		<span class="k">return</span> <span class="n">tmp</span>
+
+
 	<span class="c"># staticmethod, because it&#39;s only usefull for dealing with the SignalHound stuff, and yet it should be accessible easily for stuff like callbacks where you don&#39;t have.</span>
 	<span class="c"># easy access to the instantiated class pointer</span></div>
 	<span class="nd">@staticmethod</span>
 <div class="viewcode-block" id="SignalHound.decodeRawSweep"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.decodeRawSweep">[docs]</a>	<span class="k">def</span> <span class="nf">decodeRawSweep</span><span class="p">(</span><span class="n">bufPtr</span><span class="p">,</span> <span class="n">bufLen</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		Args:</span>
+<span class="sd">			bufPtr (pointer to buffer): Pointer to a C buffer containing a sweep dataset</span>
+<span class="sd">			buflen (integer buffer size): Size of the data in ``bufPtr``</span>
+
+<span class="sd">		Decode a C array into a numpy-array using buffer casts. Assumes the values in the buffer are of datatype ``np.short``</span>
+
+<span class="sd">		Assumed array size is ``sizeof(np.short) * buflen`` bytes, or effectively 2 * bufLen.</span>
+
+<span class="sd">		Returns:</span>
+<span class="sd">			Numpy array containing contents of buffer</span>
+
+<span class="sd">		Note: This function copies the data from the array, so it is valid even if the memory underlying the ``bufPtr`` is subsequently</span>
+<span class="sd">		deallocated. This is intended for handling contexts like the callback, where once the callback returns, the SignalHound memory</span>
+<span class="sd">		management may reuse or free the underlying buffer. Since the copied array will be managed by the python memory manager, it</span>
+<span class="sd">		is safe to preserve beyond the scope of a calling function.</span>
+<span class="sd">		&#39;&#39;&#39;</span>
 		<span class="n">bufAdr</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">addressof</span><span class="p">(</span><span class="n">bufPtr</span><span class="o">.</span><span class="n">contents</span><span class="p">)</span>
 		<span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">int_asbuffer</span><span class="p">(</span><span class="n">bufAdr</span><span class="p">,</span> <span class="n">bufLen</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">short</span><span class="p">()</span><span class="o">.</span><span class="n">nbytes</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">short</span><span class="p">)</span>  <span class="c"># Map array memory as a numpy array.</span>
 		<span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>  <span class="c"># Then copy it, so our array won&#39;t get modified when the circular buffer overwrites itself.</span>
@@ -2108,6 +2188,25 @@
 </div>
 	<span class="nd">@staticmethod</span>
 <div class="viewcode-block" id="SignalHound.fastDecodeArray"><a class="viewcode-back" href="../index.html#SignalHound.SignalHound.fastDecodeArray">[docs]</a>	<span class="k">def</span> <span class="nf">fastDecodeArray</span><span class="p">(</span><span class="n">ctBuff</span><span class="p">,</span> <span class="n">buffLen</span><span class="p">,</span> <span class="n">dtype</span><span class="p">):</span>
+		<span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">		Args:</span>
+<span class="sd">			bufPtr (pointer to buffer): Pointer to a C buffer containing a sweep dataset</span>
+<span class="sd">			buflen (integer buffer size): Size of the data in ``bufPtr``</span>
+<span class="sd">			dtype (numpy data-type): Datatype of values in array.</span>
+
+<span class="sd">		Decode a C array into a numpy-array using buffer casts.</span>
+
+<span class="sd">		Assumed array size is ``sizeof(dtype) * buflen`` bytes.</span>
+
+<span class="sd">		Returns:</span>
+<span class="sd">			Numpy array containing contents of buffer</span>
+
+
+<span class="sd">		Note: This function copies the data from the array, so it is valid even if the memory underlying the ``bufPtr`` is subsequently</span>
+<span class="sd">		deallocated. This is intended for handling contexts like the callback, where once the callback returns, the SignalHound memory</span>
+<span class="sd">		management may reuse or free the underlying buffer. Since the copied array will be managed by the python memory manager, it</span>
+<span class="sd">		is safe to preserve beyond the scope of a calling function.</span>
+<span class="sd">		&#39;&#39;&#39;</span>
 		<span class="n">bufAdr</span> <span class="o">=</span> <span class="n">ct</span><span class="o">.</span><span class="n">addressof</span><span class="p">(</span><span class="n">ctBuff</span><span class="p">)</span>
 		<span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">int_asbuffer</span><span class="p">(</span><span class="n">bufAdr</span><span class="p">,</span> <span class="n">buffLen</span> <span class="o">*</span> <span class="n">dtype</span><span class="p">()</span><span class="o">.</span><span class="n">nbytes</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>  <span class="c"># Map array memory as a numpy array.</span>
 		<span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>  <span class="c"># Then copy it, so our array won&#39;t get modified when the circular buffer overwrites itself.</span>
