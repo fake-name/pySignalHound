@@ -22,7 +22,7 @@ import sys
 import time
 import numpy as np
 
-from app.SignalHound import SignalHound
+from SignalHound import SignalHound
 
 START_TIME = time.time()
 DATA_LOG = []
