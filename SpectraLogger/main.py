@@ -57,7 +57,7 @@ def go(logGps=False, gpsTest=False):
 			acqProc = mp.Process(target=internalSweepSpectraAcqThread.sweepSource, name="AcqThread", args=((dataQueue, plotQueue), ctrlNs, printQueue))
 		else:
 			print("Importing real-time module!")
-			acqProc = mp.Process(target=spectraAcqThread.sweepSource, name="AcqThread", args=((dataQueue, plotQueue), ctrlNs, printQueue))
+			acqProc = mp.Process(target=spectraAcqThread.sweepSource, name="AcqThread", args=((dataQueue, plotQueue), cmdQueue, ctrlNs, printQueue))
 
 		acqProc.start()
 

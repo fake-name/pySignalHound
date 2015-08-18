@@ -1,4 +1,3 @@
-
 # I'm worried about possible IF frequencies creeping into the data, so I'm adding a 2.5 Mhz shift to
 # prevent the signal of interest (h-flip band) from being exactly centered in the acquired data.
 # I suspect the IF runs at the center frequency, and is sensitive to +-10 Mhz around the center.
@@ -10,10 +9,10 @@
 
 # Center frequency of the acquisition scan.
 # ACQ_FREQ               = H_FLIP_FREQ + 2.5e6
-ACQ_FREQ               = 152e6
+ACQ_FREQ               = 200e6 + 2.5e6
 
 # The ACQ_SPAN is the width of the acquisiton window. For "real-time" mode, the MAXIMUM width is 20 Mhz. For "sweeping" mode, it can be any integer.
-ACQ_SPAN               = 27e6
+ACQ_SPAN               = 20e6
 # ACQ_SPAN               = 300e6
 
 # Reference level of the acquisition
@@ -21,7 +20,7 @@ ACQ_REF_LEVEL_DB       = -60
 
 # Attenuation and gain for the acquisition. Ranges: 0-3, -1 for "auto", where the hardware tries to determine the ideal gain/attenuation from the specified reference level.
 ACQ_ATTENUATION_DB     = 10
-ACQ_GAIN_SETTING       = 3
+ACQ_GAIN_SETTING       = 0
 
 # Realtime Bandwith (e.g. bin-size) of the FFT.
 #Possible values:
@@ -41,7 +40,7 @@ ACQ_RBW                = 2.465e3
 ACQ_VBW                = ACQ_RBW
 
 # Sweep-time. In seconds. Valid ranges - 0.1 - 0.0001
-ACQ_SWEEP_TIME_SECONDS = 0.0100
+ACQ_SWEEP_TIME_SECONDS = 0.0001
 
 # FFT Windowing function.
 # Supported windows:
@@ -69,16 +68,16 @@ ACQ_UNITS              = "power"
 # "raw-sweep-loop"
 # "audio-demod"
 # "raw-pipe"
-ACQ_TYPE               = "real-time"
-# ACQ_TYPE               = "sweeping"
+#ACQ_TYPE               = "real-time"
+#ACQ_TYPE               = "sweeping"
 
 # The real-time-sweeping mode is a synthetic mode provided by this software, rather then an actual hardware mode.
-# ACQ_TYPE               = "real-time-sweeping"
+ACQ_TYPE               = "real-time"
 # overlap of acquisitions in the real-time-sweeping mode. In percentage. 1=100%, 0.5 = 50%, 0.01 = 1%, 0 = 0%
 # Don't actually use 1 (100%). Shit would break.
 ACQ_OVERLAP            = 0.5
 # Number of scans to take at each frequency
-ACQ_BIN_SAMPLES        = 600
+ACQ_BIN_SAMPLES        = 100
 
 
 # The acquired data modes. Valid options are "average" and "min-max"
@@ -109,7 +108,7 @@ PRINT_LOOP_CNT         = 100
 CAL_CHK_LOOP_CNT       = 5000
 
 # Number of acquisition sweeps averaged over for each data-array written to the log files.
-NUM_AVERAGE            = 600 * 6
+NUM_AVERAGE            = 100
 
 # Number of acquisition sweeps averaged over for each data-array fet to the plotting system
 # ~60 divided by NUM_AVERAGE yields Hz
@@ -126,4 +125,3 @@ GPS_COM_PORT = None
 # GPS_COM_PORT = 'COM3'
 # GPS_COM_PORT = 'COM14'
 # GPS_COM_PORT = '/dev/tty.PL2303-00001014'
-

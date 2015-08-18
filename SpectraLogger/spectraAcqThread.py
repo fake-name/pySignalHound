@@ -48,7 +48,7 @@ def startAcquisition(sh, dataQueue, plotQueue):
 	if plotQueue:
 		plotQueue.put({"settings" : sh.getCurrentAcquisitionSettings()})
 
-def sweepSource(dataQueues, ctrlNs, printQueue):
+def sweepSource(dataQueues, cmdQueue, ctrlNs, printQueue):
 
 	dataQueue, plotQueue = dataQueues
 
@@ -107,6 +107,8 @@ def sweepSource(dataQueues, ctrlNs, printQueue):
 
 			# if we've reached the number of average items per output array, or the frequency has changed, requiring an early dump of the specra data.
 			if runningSumItems == NUM_AVERAGE or changed:
+
+
 
 				# Divide down to the average
 				arr = runningSum / runningSumItems
