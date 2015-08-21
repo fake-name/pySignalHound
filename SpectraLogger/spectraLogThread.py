@@ -91,7 +91,7 @@ def logIter(dataQueue, ctrlNs, printQueue, arrWidth, test=False):
 	# dTypeStructure = [("TimeStamp", "f8"), ("StartFreq", "f4"), ("BinSize", "f4"), ("NumScans", "f4"), ("data", "f4", arrWidth)]
 	# dType = np.dtype(dTypeStructure)
 
-	arrWidth = arrWidth + 1 + 1 + 1 + 1 # Width of the data array, plus - TimeStamp, StartFreq, BinSize, NumScans
+	arrWidth = arrWidth + 17 # Width of the data array, plus - TimeStamp, StartFreq, BinSize, NumScans
 
 	# Main dataset - compressed, chunked, checksummed.
 	dset = out.create_dataset('Spectrum_Data', (0, arrWidth), maxshape=(None, arrWidth), dtype = np.float64, chunks=True, compression="gzip", fletcher32=True, shuffle=True)
@@ -114,7 +114,7 @@ def logIter(dataQueue, ctrlNs, printQueue, arrWidth, test=False):
 			# print "data" in tmp
 			# print "info" in tmp
 			# print "data" in tmp and "max" in tmp["data"]
-			if "row" in tmp:
+			if "row" and "gps-info" in tmp:
 				saveTime, startFreq, binSize, runningSumItems, arr = tmp["row"]
 				# append it to the HDF5 file
 				curSize = dset.shape[0]

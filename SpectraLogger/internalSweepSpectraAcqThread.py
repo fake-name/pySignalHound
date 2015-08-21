@@ -21,6 +21,7 @@ import logSetup
 import logging
 import time
 import traceback
+from multiproccesing import Lock
 
 import numpy as np
 
@@ -29,9 +30,9 @@ from settings import ACQ_FREQ, ACQ_SPAN, ACQ_REF_LEVEL_DB, ACQ_ATTENUATION_DB, A
 from settings import ACQ_SWEEP_TIME_SECONDS, ACQ_WINDOW_TYPE, ACQ_UNITS, ACQ_TYPE, ACQ_MODE, ACQ_Y_SCALE, PRINT_LOOP_CNT, CAL_CHK_LOOP_CNT
 from settings import NUM_AVERAGE
 
-def sweepSource(dataQueues, ctrlNs, printQueue):
+def sweepSource(dataQueues, FELock, ctrlNs, printQueue):
 	acqRunner = InternalSweepAcqThread(printQueue)
-	acqRunner.sweepSource(dataQueues, ctrlNs)
+	acqRunner.sweepSource(dataQueues, FELock, ctrlNs)
 
 class InternalSweepAcqThread(object):
 	log = logging.getLogger("Main.AcqProcess")
@@ -91,7 +92,7 @@ class InternalSweepAcqThread(object):
 		dataQueue.put({"settings" : self.sh.getCurrentAcquisitionSettings()})
 		plotQueue.put({"settings" : self.sh.getCurrentAcquisitionSettings()})
 
-	def sweepSource(self, dataQueues, ctrlNs):
+	def sweepSource(self, dataQueues, FELock, ctrlNs):
 
 		dataQueue, plotQueue = dataQueues
 
@@ -118,9 +119,13 @@ class InternalSweepAcqThread(object):
 		runningSum = np.array(())
 		runningSumItems = 0
 		startFreq = 0
-
+		lockcheck = False
 
 		while 1:
+			# only aquire lock the first time
+			if not lockcheck:
+				FELock.aquire()
+				lockcheck = True
 			try:
 
 
@@ -150,6 +155,7 @@ class InternalSweepAcqThread(object):
 
 
 				# if we've reached the number of average items per output array, or the frequency has changed, requiring an early dump of the specra data.
+				# since data is no loger being aquired, the lock can be released
 				if runningSumItems == NUM_AVERAGE or changed:
 					self.log.info("Running sum shape = %s, items = %s", runningSum.shape, runningSumItems)
 					# Divide down to the average
@@ -198,7 +204,10 @@ class InternalSweepAcqThread(object):
 
 
 
-			except Exception:
+			except Exception: 
+				# release lock if there is an exception
+				FELock.release()
+				lockcheck = False
 				self.log.error("IOError in Acquisition Thread!")
 				self.log.error(traceback.format_exc())
 
@@ -239,7 +248,9 @@ class InternalSweepAcqThread(object):
 
 			if loops % ACQ_BIN_SAMPLES == 0:
 				print("Should retune frontend!")
+				FELock.release()
 				self.sh.abort()
+				FELock.aquire()
 				self.startAcquisition(dataQueue, dataQueue)
 
 				# print("Current acq mode = ", self.sh.queryTraceInfo())
@@ -267,10 +278,12 @@ class InternalSweepAcqThread(object):
 
 
 			if ctrlNs.run == False:
+
 				self.log.info("Stopping Acq-thread!")
 				break
 
-
+		FELock.release()
+		lockcheck = False
 		self.sh.abort()
 		self.sh.closeDevice()
 

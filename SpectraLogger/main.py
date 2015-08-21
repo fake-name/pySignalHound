@@ -54,12 +54,19 @@ def go(logGps=False, gpsTest=False):
 	if not gpsTest :
 		if settings.ACQ_TYPE == "real-time-sweeping":
 			print("Importing real-time-sweeping module!")
-			acqProc = mp.Process(target=internalSweepSpectraAcqThread.sweepSource, name="AcqThread", args=((dataQueue, plotQueue), ctrlNs, printQueue))
+			acqProc = mp.Process(target=internalSweepSpectraAcqThread.sweepSource, name="AcqThread", args=((dataQueue, plotQueue), cmdQueue, FELock, ctrlNs, printQueue))
 		else:
 			print("Importing real-time module!")
-			acqProc = mp.Process(target=spectraAcqThread.sweepSource, name="AcqThread", args=((dataQueue, plotQueue), cmdQueue, ctrlNs, printQueue))
+			acqProc = mp.Process(target=spectraAcqThread.sweepSource, name="AcqThread", args=((dataQueue, plotQueue), cmdQueue, FELock, ctrlNs, printQueue))
 
 		acqProc.start()
+
+	if logEORE:
+		import EOREsettings
+		import eoreLogThread
+		EOREProc = mp.Process(target=eoreLogThread.startEORELog, name="EOREThread", args=((dataQueue, plotQueue), cmdQueue, FELock, ctrlNs, printQueue))
+		EOREProc.start()
+
 
 	if logGps and settings.GPS_COM_PORT:
 		import gpsLogThread
@@ -120,6 +127,11 @@ def go(logGps=False, gpsTest=False):
 		if gpsTest:
 			print("Faking halt signals")
 			ctrlNs.acqRunning = False
+
+	if logEORE:
+		log.info("Joining on EOREProc")
+		while EOREProc.is_alive():
+			EOREProc.join(0.1)
 
 
 		# print("acqProc.is_alive()", acqProc.is_alive(), "logProc.is_alive()", logProc.is_alive(), "plotProc.is_alive()", plotProc.is_alive())
