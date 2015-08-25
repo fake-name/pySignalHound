@@ -24,19 +24,22 @@ import logging
 import spectraAcqThread
 import internalSweepSpectraAcqThread
 import spectraLogThread
+import eoreSpectraLogThread
 
 import spectraPlotApiThread
 import printThread
-
+import EOREsettings
 import settings
 
 
-def go(logGps=False, gpsTest=False):
+def go(logGps=False, gpsTest=False, logEORE = False):
 
 	plotQueue = mp.Queue()
 	dataQueue = mp.Queue()
 	printQueue = mp.Queue()
+	cmdQueue = mp.Queue()
 	ctrlManager = mp.Manager()
+	FELock = mp.Lock()
 
 	logSetup.initLogging(printQ = printQueue)
 	log = logging.getLogger("Main.Main")
@@ -50,6 +53,7 @@ def go(logGps=False, gpsTest=False):
 
 	if not settings.GPS_COM_PORT:
 		print("WARNING: No GPS port specified. GPS mode can not work.")
+	
 
 	if not gpsTest :
 		if settings.ACQ_TYPE == "real-time-sweeping":
@@ -64,8 +68,13 @@ def go(logGps=False, gpsTest=False):
 	if logEORE:
 		import EOREsettings
 		import eoreLogThread
+		if not EOREsettings.EORE_COM_PORT:
+			print("WARNING: No EORE port specified. EORE mode can not work.")
+
 		EOREProc = mp.Process(target=eoreLogThread.startEORELog, name="EOREThread", args=((dataQueue, plotQueue), cmdQueue, FELock, ctrlNs, printQueue))
 		EOREProc.start()
+		logProc = mp.Process(target=eoreSpectraLogThread.logSweeps, name="LogThread", args=(dataQueue, ctrlNs, printQueue, gpsTest))
+		logProc.start()
 
 
 	if logGps and settings.GPS_COM_PORT:
@@ -73,8 +82,10 @@ def go(logGps=False, gpsTest=False):
 		gpsProc = mp.Process(target=gpsLogThread.startGpsLog, name="GpsThread", args=((dataQueue, plotQueue), ctrlNs, printQueue))
 		gpsProc.start()
 
-	logProc = mp.Process(target=spectraLogThread.logSweeps, name="LogThread", args=(dataQueue, ctrlNs, printQueue, gpsTest))
-	logProc.start()
+
+	if not logEORE:
+		logProc = mp.Process(target=spectraLogThread.logSweeps, name="LogThread", args=(dataQueue, ctrlNs, printQueue, gpsTest))
+		logProc.start()
 
 	if not gpsTest:
 		plotProc = mp.Process(target=spectraPlotApiThread.startApiServer, name="PlotApiThread", args=(plotQueue, ctrlNs, printQueue))
@@ -119,6 +130,7 @@ def go(logGps=False, gpsTest=False):
 		log.info("Joining on AcqProc")
 		while acqProc.is_alive():
 			acqProc.join(0.1)
+
 	if logGps and settings.GPS_COM_PORT:
 		log.info("Joining on GpsProc")
 		while gpsProc.is_alive():
@@ -176,11 +188,12 @@ def parseArgs():
 		print("		--go         Begin acquisition (if not specified, this message is printed)")
 		print("		--gps        Take GPS data. Requires a USB GPS if specified.")
 		print("		--gps-only   Take GPS data and *not* spectra. Intended for verifying GPS functionality.")
+		print("		--eore       Log EORE state with data.")
 
 
 		return
 
-	availableArgs = ["--go", "--gps", "--gps-only"]
+	availableArgs = ["--go", "--gps", "--gps-only", "--eore"]
 
 	args = sys.argv[1:]
 
@@ -204,8 +217,13 @@ def parseArgs():
 		gpsTest = True
 		print("GPS Testing mode. Will not take actual spectra!")
 
+	logEORE = False
+	if "--eore" in args:
+		logEORE= True
+		print("Logging EORE data. Please ensure you have a EORE connected")
+
 	if '--go' in args:
-		go(logGps=logGps, gpsTest=gpsTest)
+		go(logGps=logGps, gpsTest=gpsTest, logEORE=logEORE)
 	else:
 		print("'--go' was not passed. Not doing actual acquisition.")
 

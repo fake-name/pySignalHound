@@ -21,7 +21,7 @@ import logSetup
 import logging
 import time
 import traceback
-from multiproccesing import Lock
+from multiprocessing import Lock
 
 import numpy as np
 
@@ -30,9 +30,9 @@ from settings import ACQ_FREQ, ACQ_SPAN, ACQ_REF_LEVEL_DB, ACQ_ATTENUATION_DB, A
 from settings import ACQ_SWEEP_TIME_SECONDS, ACQ_WINDOW_TYPE, ACQ_UNITS, ACQ_TYPE, ACQ_MODE, ACQ_Y_SCALE, PRINT_LOOP_CNT, CAL_CHK_LOOP_CNT
 from settings import NUM_AVERAGE
 
-def sweepSource(dataQueues, FELock, ctrlNs, printQueue):
+def sweepSource(dataQueues,  cmdQueue, FELock, ctrlNs, printQueue):
 	acqRunner = InternalSweepAcqThread(printQueue)
-	acqRunner.sweepSource(dataQueues, FELock, ctrlNs)
+	acqRunner.sweepSource(dataQueues, cmdQueue, FELock, ctrlNs)
 
 class InternalSweepAcqThread(object):
 	log = logging.getLogger("Main.AcqProcess")
@@ -92,7 +92,7 @@ class InternalSweepAcqThread(object):
 		dataQueue.put({"settings" : self.sh.getCurrentAcquisitionSettings()})
 		plotQueue.put({"settings" : self.sh.getCurrentAcquisitionSettings()})
 
-	def sweepSource(self, dataQueues, FELock, ctrlNs):
+	def sweepSource(self, dataQueues, cmdQueue, FELock, ctrlNs):
 
 		dataQueue, plotQueue = dataQueues
 
@@ -124,8 +124,11 @@ class InternalSweepAcqThread(object):
 		while 1:
 			# only aquire lock the first time
 			if not lockcheck:
-				FELock.aquire()
-				lockcheck = True
+				try:
+					FELock.acquire()
+					lockcheck = True
+				except LockTimeout:
+					self.log.error("Spectral Acquisition Thread is Deadlocked!")
 			try:
 
 
@@ -250,7 +253,7 @@ class InternalSweepAcqThread(object):
 				print("Should retune frontend!")
 				FELock.release()
 				self.sh.abort()
-				FELock.aquire()
+				FELock.acquire()
 				self.startAcquisition(dataQueue, dataQueue)
 
 				# print("Current acq mode = ", self.sh.queryTraceInfo())
