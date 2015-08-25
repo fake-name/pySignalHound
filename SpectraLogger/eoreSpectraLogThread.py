@@ -62,7 +62,7 @@ def logSweeps(dataQueue, ctrlNs, printQueue, test=False):
 
 
 	while ctrlNs.acqRunning:
-		logIter(dataQueue, ctrlNs, printQueue, arrWidth, test, eore)
+		logIter(dataQueue, ctrlNs, printQueue, arrWidth, test)
 
 	log.info("Log-thread closing queues!")
 	dataQueue.close()
@@ -104,9 +104,11 @@ def logIter(dataQueue, ctrlNs, printQueue, arrWidth, test=False):
 
 	runningSum = np.array(())
 	runningSumItems = 0
+	row = False
 	while 1:
 
 		if dataQueue.empty():
+			#log.info("Data queue empty")
 			time.sleep(0.005)
 		else:
 
@@ -114,21 +116,28 @@ def logIter(dataQueue, ctrlNs, printQueue, arrWidth, test=False):
 			# print "data" in tmp
 			# print "info" in tmp
 			# print "data" in tmp and "max" in tmp["data"]
-
-			if "row" and "gps-info" and "eore-info" in tmp:
+			log.info("current keys: %s", tmp.keys())
+			
+			if "row" in tmp:
+				row = True
 				saveTime, startFreq, binSize, runningSumItems, arr = tmp["row"]
+
+			elif "eore-info" in tmp:
+				row = False
 				eoreState = tmp["eore-info"]
+				
 				# append it to the HDF5 file
 				curSize = dset.shape[0]
 				# print("Current shape = ", dset.shape)
 				dset.resize(curSize+1, axis=0)
+				log.info("About to write row to file!")
 
 				flatten = lambda *args: args
-				dset[curSize] = flatten(saveTime, startFreq, binSize, runningSumItems, eoreState[eore.MAIN_TONE_ATTEN],\
-				  eoreState[eore.AUX_TONE_ATTEN], eoreState[eore.NOISE_DIODE_ATTEN], eoreState[eore.SWITCH_SWR_TONE_ATTEN],\
-				  eoreState[eore.SWITCH_TONE_ATTEN], eoreState[eore.MID_AMP_ATTEN], eoreState['noiseDiode'],\
+				dset[curSize] = flatten(saveTime, startFreq, binSize, runningSumItems, eoreState['MAIN_TONE_ATTEN'],\
+				  eoreState['AUX_TONE_ATTEN'], eoreState['NOISE_DIODE_ATTEN'], eoreState['SWITCH_SWR_TONE_ATTEN'],\
+				  eoreState['SWITCH_TONE_ATTEN'], eoreState['MID_AMP_ATTEN'], eoreState['noiseDiode'],\
 				  eoreState['oscillator'], eoreState['VCO'], eoreState['temp'], eoreState['targetTemp'],\
-				  eoreState[eore.MAIN_SWITCH], eoreState[eore.SWR_SWITCH], *arr)
+				  eoreState['MAIN_SWITCH'], eoreState['SWR_SWITCH'], *arr)
 
 				out.flush()  # FLush early, flush often
 				# Probably a bad idea without a SSD
@@ -143,7 +152,7 @@ def logIter(dataQueue, ctrlNs, printQueue, arrWidth, test=False):
 				if time.time() - loop_timer > FILE_ROTATION_INTERVAL:
 					log.info("Rotating log files")
 					break
-
+			
 
 			elif "settings" in tmp or "status" in tmp or "gps-info" in tmp:
 
@@ -162,6 +171,7 @@ def logIter(dataQueue, ctrlNs, printQueue, arrWidth, test=False):
 				# log.info("StatusTable size = %s", calset.shape)
 			else:
 				log.error("WAT? Unknown packet!")
+				log.info("current keys: %s", tmp.keys())
 				log.error(tmp)
 
 

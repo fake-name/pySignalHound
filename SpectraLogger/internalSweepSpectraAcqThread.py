@@ -124,11 +124,8 @@ class InternalSweepAcqThread(object):
 		while 1:
 			# only aquire lock the first time
 			if not lockcheck:
-				try:
-					FELock.acquire()
-					lockcheck = True
-				except LockTimeout:
-					self.log.error("Spectral Acquisition Thread is Deadlocked!")
+				FELock.acquire()
+				lockcheck = True
 			try:
 
 
@@ -160,6 +157,8 @@ class InternalSweepAcqThread(object):
 				# if we've reached the number of average items per output array, or the frequency has changed, requiring an early dump of the specra data.
 				# since data is no loger being aquired, the lock can be released
 				if runningSumItems == NUM_AVERAGE or changed:
+					cmdQueue.put({"update": "now"})
+					
 					self.log.info("Running sum shape = %s, items = %s", runningSum.shape, runningSumItems)
 					# Divide down to the average
 					arr = runningSum / runningSumItems
@@ -184,6 +183,9 @@ class InternalSweepAcqThread(object):
 						self.log.info("Estimated items in processing queue %s", dataQueue.qsize())
 						self.log.info("Running sum shape = %s, items = %s", runningSum.shape, runningSumItems)
 						runningSumItems = 0
+					if  lockcheck:
+						FELock.release()
+						lockcheck = False
 
 					# now = time.time()
 					# delta = now-loop_timer
@@ -209,8 +211,9 @@ class InternalSweepAcqThread(object):
 
 			except Exception: 
 				# release lock if there is an exception
-				FELock.release()
-				lockcheck = False
+				if lockcheck:
+					FELock.release()
+					lockcheck = False
 				self.log.error("IOError in Acquisition Thread!")
 				self.log.error(traceback.format_exc())
 
@@ -251,9 +254,10 @@ class InternalSweepAcqThread(object):
 
 			if loops % ACQ_BIN_SAMPLES == 0:
 				print("Should retune frontend!")
-				FELock.release()
+				
+				
 				self.sh.abort()
-				FELock.acquire()
+					
 				self.startAcquisition(dataQueue, dataQueue)
 
 				# print("Current acq mode = ", self.sh.queryTraceInfo())
@@ -281,12 +285,15 @@ class InternalSweepAcqThread(object):
 
 
 			if ctrlNs.run == False:
-
+				if  lockcheck:
+					FELock.release()
+					lockcheck = False
 				self.log.info("Stopping Acq-thread!")
 				break
 
-		FELock.release()
-		lockcheck = False
+		if  lockcheck:
+			FELock.release()
+			lockcheck = False
 		self.sh.abort()
 		self.sh.closeDevice()
 

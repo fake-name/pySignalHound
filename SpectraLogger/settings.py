@@ -77,7 +77,7 @@ ACQ_TYPE               = "real-time-sweeping"
 # Don't actually use 1 (100%). Shit would break.
 ACQ_OVERLAP            = 0.5
 # Number of scans to take at each frequency
-ACQ_BIN_SAMPLES        = 1000
+ACQ_BIN_SAMPLES        = 12
 
 
 # The acquired data modes. Valid options are "average" and "min-max"
@@ -108,7 +108,7 @@ PRINT_LOOP_CNT         = 100
 CAL_CHK_LOOP_CNT       = 5000
 
 # Number of acquisition sweeps averaged over for each data-array written to the log files.
-NUM_AVERAGE            = 600 * 6
+NUM_AVERAGE            = 3
 
 # Number of acquisition sweeps averaged over for each data-array fet to the plotting system
 # ~60 divided by NUM_AVERAGE yields Hz
