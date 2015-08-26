@@ -19,7 +19,7 @@ ACQ_SPAN               = 30e6
 ACQ_REF_LEVEL_DB       = -60
 
 # Attenuation and gain for the acquisition. Ranges: 0-3, -1 for "auto", where the hardware tries to determine the ideal gain/attenuation from the specified reference level.
-ACQ_ATTENUATION_DB     = 10
+ACQ_ATTENUATION_DB     = 0
 ACQ_GAIN_SETTING       = 0
 
 # Realtime Bandwith (e.g. bin-size) of the FFT.
@@ -77,7 +77,7 @@ ACQ_TYPE               = "real-time-sweeping"
 # Don't actually use 1 (100%). Shit would break.
 ACQ_OVERLAP            = 0.5
 # Number of scans to take at each frequency
-ACQ_BIN_SAMPLES        = 12
+ACQ_BIN_SAMPLES        = 30000
 
 
 # The acquired data modes. Valid options are "average" and "min-max"
@@ -108,7 +108,7 @@ PRINT_LOOP_CNT         = 100
 CAL_CHK_LOOP_CNT       = 5000
 
 # Number of acquisition sweeps averaged over for each data-array written to the log files.
-NUM_AVERAGE            = 3
+NUM_AVERAGE            = 3000
 
 # Number of acquisition sweeps averaged over for each data-array fet to the plotting system
 # ~60 divided by NUM_AVERAGE yields Hz

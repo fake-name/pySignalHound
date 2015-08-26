@@ -146,7 +146,7 @@ def go(logGps=False, gpsTest=False, logEORE = False):
 			EOREProc.join(0.1)
 
 
-		# print("acqProc.is_alive()", acqProc.is_alive(), "logProc.is_alive()", logProc.is_alive(), "plotProc.is_alive()", plotProc.is_alive())
+		#print("acqProc.is_alive()", acqProc.is_alive(), "logProc.is_alive()", logProc.is_alive(), "plotProc.is_alive()", plotProc.is_alive())
 	log.info("Joining on LogProc")
 	while logProc.is_alive():
 		logProc.join(0.1)

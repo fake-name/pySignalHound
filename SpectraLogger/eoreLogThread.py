@@ -41,7 +41,8 @@ def startEORELog(dataQueues, cmdQueue, FELock, ctrlNs, printQueue):
 
 class EORELogThread(object):
 	log = logging.getLogger("Main.EOREProcess")
-
+	mainIndex = 0
+	SWRIndex = 0
 	state = {
 		'MAIN_TONE_ATTEN' : 0,
 		'AUX_TONE_ATTEN' : 0,
@@ -49,13 +50,15 @@ class EORELogThread(object):
 		'SWITCH_SWR_TONE_ATTEN' : 0,
 		'SWITCH_TONE_ATTEN' : 0,
 		'MID_AMP_ATTEN' : 0,
-		'noiseDiode' : 0, 
+		'noiseDiode' : 1, 
 		'oscillator' : 0,
 		'VCO' : 0,
 		'temp' : None, 
 		'targetTemp' : 15,
-		'MAIN_SWITCH' : [eore.TERMINATION, eore.NOISE_SOURCE],
-		'SWR_SWITCH' : [eore.SWITCHED_SWEEPER_INPUT]
+		'MAIN_SWITCH' : eore.TERMINATION,
+		'SWR_SWITCH' : eore.SWITCHED_SWEEPER_INPUT,
+		'MAIN_SWITCH_ROTATION' : [eore.TERMINATION, eore.EMI_ANTENNA],
+		'SWR_SWITCH_ROTATION' : [eore.SWITCHED_SWEEPER_INPUT]
 	}  
 
 	attenuators = [
@@ -90,8 +93,8 @@ class EORELogThread(object):
 		self.parseMessage(self.eoreCTL.writeOscillator(0, self.state['oscillator']))
 		self.parseMessage(self.eoreCTL.powerDownVco())
 		self.parseMessage(self.eoreCTL.setTemperature(self.state['targetTemp']))
-		self.parseMessage(self.eoreCTL.writeSwitch(eore.MAIN_SWITCH, self.state['MAIN_SWITCH'][0]))
-		self.parseMessage(self.eoreCTL.writeSwitch(eore.SWR_SWITCH, self.state['SWR_SWITCH'][0]))
+		self.parseMessage(self.eoreCTL.writeSwitch(eore.MAIN_SWITCH, self.state['MAIN_SWITCH']))
+		self.parseMessage(self.eoreCTL.writeSwitch(eore.SWR_SWITCH, self.state['SWR_SWITCH']))
 
 
 
@@ -162,6 +165,14 @@ class EORELogThread(object):
 
 	def update(self, mode):
 		if mode == "now":
+			if len(self.state['MAIN_SWITCH_ROTATION']) > 1:
+				self.mainIndex = (self.mainIndex + 1) % len(self.state['MAIN_SWITCH_ROTATION'])
+				self.state['MAIN_SWITCH'] = self.state['MAIN_SWITCH_ROTATION'][self.mainIndex]
+				self.parseMessage(self.eoreCTL.writeSwitch(eore.MAIN_SWITCH, self.state['MAIN_SWITCH']))
+			if len(self.state['SWR_SWITCH_ROTATION']) > 1:
+				self.SWRIndex = (self.SWRIndex + 1) % len(self.state['SWR_SWITCH_ROTATION'])
+				self.state['SWR_SWITCH'] = self.state['SWR_SWITCH_ROTATION'][self.SWRIndex]
+				self.parseMessage(self.eoreCTL.writeSwitch(eore.SWR_SWITCH, self.state['SWR_SWITCH_']))
 			return
 		else:
 			self.state = EORE_CONFIGS[mode]
@@ -175,8 +186,8 @@ class EORELogThread(object):
 			self.parseMessage(self.eoreCTL.writeOscillator(0, self.state['oscillator']))
 			self.parseMessage(self.eoreCTL.powerDownVco())
 			self.parseMessage(self.eoreCTL.setTemperature(self.state['targetTemp']))
-			self.parseMessage(self.eoreCTL.writeSwitch(eore.MAIN_SWITCH, self.state['MAIN_SWITCH'][0]))
-			self.parseMessage(self.eoreCTL.writeSwitch(eore.SWR_SWITCH, self.state['SWR_SWITCH'][0]))
+			self.parseMessage(self.eoreCTL.writeSwitch(eore.MAIN_SWITCH, self.state['MAIN_SWITCH']))
+			self.parseMessage(self.eoreCTL.writeSwitch(eore.SWR_SWITCH, self.state['SWR_SWITCH']))
 
 	def sendState(self):
 		
