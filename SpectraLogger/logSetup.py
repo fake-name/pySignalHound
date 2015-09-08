@@ -21,13 +21,15 @@ class ColourHandler(logging.Handler):
 		# print record.name
 
 		if record.name == "Main.Interface":
-			record.colour = clr.Fore.BLUE
+			record.colour = +clr.Back.WHITE+clr.Fore.BLACK
 		elif record.name == "Main.DeviceInt":
 			record.colour = clr.Fore.RED
 		elif record.name == "Main.Main":
 			record.colour = clr.Fore.GREEN
 		elif record.name == "Main.LogProcess":
 			record.colour = clr.Fore.CYAN
+		elif record.name == "Main.EOREProcess":
+			record.colour = clr.Fore.BLUE
 		elif record.name == "Main.AcqProcess":
 			record.colour = clr.Fore.YELLOW
 		elif record.name == "Main.Printer":

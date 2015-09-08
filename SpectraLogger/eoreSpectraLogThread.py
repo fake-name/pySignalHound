@@ -116,7 +116,7 @@ def logIter(dataQueue, ctrlNs, printQueue, arrWidth, test=False):
 			# print "data" in tmp
 			# print "info" in tmp
 			# print "data" in tmp and "max" in tmp["data"]
-			log.info("current keys: %s", tmp.keys())
+			log.debug("current keys: %s", tmp.keys())
 			
 			if "row" in tmp:
 				row = True
@@ -130,7 +130,7 @@ def logIter(dataQueue, ctrlNs, printQueue, arrWidth, test=False):
 				curSize = dset.shape[0]
 				# print("Current shape = ", dset.shape)
 				dset.resize(curSize+1, axis=0)
-				log.info("About to write row to file!")
+				log.debug("About to write row to file!")
 
 				flatten = lambda *args: args
 				dset[curSize] = flatten(saveTime, startFreq, binSize, runningSumItems, eoreState['MAIN_TONE_ATTEN'],\

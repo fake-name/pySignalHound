@@ -157,7 +157,7 @@ class InternalSweepAcqThread(object):
 				# if we've reached the number of average items per output array, or the frequency has changed, requiring an early dump of the specra data.
 				# since data is no loger being aquired, the lock can be released
 				if runningSumItems == NUM_AVERAGE or changed:
-					cmdQueue.put({"update": "now"})
+					
 					
 					self.log.info("Running sum shape = %s, items = %s", runningSum.shape, runningSumItems)
 					# Divide down to the average
@@ -170,7 +170,7 @@ class InternalSweepAcqThread(object):
 					# Only write out to the file if we actually have data
 					if runningSumItems != 0:
 
-
+						cmdQueue.put({"update": "now"})
 						dataQueue.put({"row" : (saveTime, startFreq, binSize, runningSumItems, arr)})
 						if plotQueue:
 							plotQueue.put({"row" : (saveTime, startFreq, binSize, runningSumItems, arr)})
@@ -253,8 +253,6 @@ class InternalSweepAcqThread(object):
 			loops += 1
 
 			if loops % ACQ_BIN_SAMPLES == 0:
-				print("Should retune frontend!")
-				
 				
 				self.sh.abort()
 					

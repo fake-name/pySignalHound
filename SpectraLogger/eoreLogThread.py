@@ -36,7 +36,7 @@ from EOREsettings import EORE_COM_PORT, EORE_CONFIGS
 
 def startEORELog(dataQueues, cmdQueue, FELock, ctrlNs, printQueue):
 	print("Creating GPS thread")
-	EORERunner = EORELogThread(printQueue)
+	EORERunner = EORELogThread(printQueue, ctrlNs)
 	EORERunner.sweepSource(dataQueues, cmdQueue, FELock, ctrlNs)
 
 class EORELogThread(object):
@@ -57,7 +57,7 @@ class EORELogThread(object):
 		'targetTemp' : 15,
 		'MAIN_SWITCH' : eore.TERMINATION,
 		'SWR_SWITCH' : eore.SWITCHED_SWEEPER_INPUT,
-		'MAIN_SWITCH_ROTATION' : [eore.TERMINATION, eore.EMI_ANTENNA],
+		'MAIN_SWITCH_ROTATION' : [eore.TERMINATION, eore.NOISE_SOURCE],
 		'SWR_SWITCH_ROTATION' : [eore.SWITCHED_SWEEPER_INPUT]
 	}  
 
@@ -75,9 +75,15 @@ class EORELogThread(object):
 		eore.SWR_SWITCH, 
 	]
 
-	def __init__(self, printQueue):
+	def __init__(self, printQueue, ctrlNs):
 		self.log.info("Initializing EORE")
-		self.eoreCTL = eore.EoreController(EORE_COM_PORT)
+		try:
+			self.eoreCTL = eore.EoreController(EORE_COM_PORT)
+		except:
+   			self.log.error("No connection to the device could be established")
+   			ctrlNs.run == False
+
+
 		self.printQueue = printQueue
 		logSetup.initLogging(printQ=printQueue)
 
@@ -105,7 +111,7 @@ class EORELogThread(object):
 		
 		while 1:
 			FELock.acquire()
-			self.state['temp'] = float(self.eoreCTL.getTemperature()[25:34])
+			self.state['temp'] = float(self.Watchdog(lambda: self.eoreCTL.getTemperature()[25:34]))
 			if cmdQueue.empty():
 				time.sleep(0.005)
 			else:
@@ -116,19 +122,20 @@ class EORELogThread(object):
 					for key in cmd:
 						self.state[key] = cmd[key]
 						if key in self.switches:
-							self.parseMessage(self.eoreCTL.writeSwitch(key, cmd[key]))
+							self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeSwitch(key, cmd[key])))
 						elif key in self.attenuators:
-							self.parseMessage(self.eoreCTL.writeAtten(key, cmd[key]))
+							self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeAtten(key, cmd[key])))
 						elif key == 'noiseDiode':
-							self.parseMessage(self.eoreCTL.noiseDiodePowerCtl(cmd[key]))
+							self.parseMessage(self.Watchdog(lambda: self.eoreCTL.noiseDiodePowerCtl(cmd[key])))
 						elif key == 'oscillator':
-							self.parseMessage(self.eoreCTL.writeOscillator(0, cmd[key]))
+							self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeOscillator(0, cmd[key])))
 						elif key == 'VCO' :
 							if cmd['VCO'] > 0:
-								self.parseMessage(self.eoreCTL.chirpVco(cmd[key]))
-							else: self.eoreCTL.powerDownVco()
+								self.parseMessage(self.Watchdog(lambda: self.eoreCTL.chirpVco(cmd[key])))
+							else: self.Watchdog(lambda: self.eoreCTL.powerDownVco())
 						elif key == 'targetTemp' :
-							self.parseMessage(self.eoreCTL.setTemperature(cmd[key]))
+							self.parseMessage(self.Watchdog(lambda: self.eoreCTL.setTemperature(cmd[key])))
+				self.log.info("EORE state updated!")
 				self.sendState()			
 
 			FELock.release()	
@@ -163,37 +170,50 @@ class EORELogThread(object):
 			self.log.error(ret)
 			return False
 
+	def Watchdog(self, f):
+		failcount = 0
+		while (1):
+			try:
+				return f()
+			except (eore.TimeoutError, eore.CommandError, eore.UnknownResponseError) as e:
+				self.log.warning("Could not access EORE, Retrying...")
+	   			failcount += 1
+	   			if (failcount > 5):
+	   				self.log.error("ERROR when attempting to modify EORE state!")
+	   				self.log.error(e)
+	   				break
+
 	def update(self, mode):
 		if mode == "now":
 			if len(self.state['MAIN_SWITCH_ROTATION']) > 1:
 				self.mainIndex = (self.mainIndex + 1) % len(self.state['MAIN_SWITCH_ROTATION'])
 				self.state['MAIN_SWITCH'] = self.state['MAIN_SWITCH_ROTATION'][self.mainIndex]
-				self.parseMessage(self.eoreCTL.writeSwitch(eore.MAIN_SWITCH, self.state['MAIN_SWITCH']))
+				self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeSwitch(eore.MAIN_SWITCH, self.state['MAIN_SWITCH'])))
 			if len(self.state['SWR_SWITCH_ROTATION']) > 1:
 				self.SWRIndex = (self.SWRIndex + 1) % len(self.state['SWR_SWITCH_ROTATION'])
 				self.state['SWR_SWITCH'] = self.state['SWR_SWITCH_ROTATION'][self.SWRIndex]
-				self.parseMessage(self.eoreCTL.writeSwitch(eore.SWR_SWITCH, self.state['SWR_SWITCH_']))
+				self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeSwitch(eore.SWR_SWITCH, self.state['SWR_SWITCH_'])))
 			return
 		else:
 			self.state = EORE_CONFIGS[mode]
-			self.parseMessage(self.eoreCTL.writeAtten(eore.MAIN_TONE_ATTEN,       self.state['MAIN_TONE_ATTEN']))
-			self.parseMessage(self.eoreCTL.writeAtten(eore.AUX_TONE_ATTEN,        self.state['AUX_TONE_ATTEN']))
-			self.parseMessage(self.eoreCTL.writeAtten(eore.NOISE_DIODE_ATTEN,     self.state['NOISE_DIODE_ATTEN']))
-			self.parseMessage(self.eoreCTL.writeAtten(eore.SWITCH_SWR_TONE_ATTEN, self.state['SWITCH_SWR_TONE_ATTEN']))
-			self.parseMessage(self.eoreCTL.writeAtten(eore.SWITCH_TONE_ATTEN,     self.state['SWITCH_TONE_ATTEN']))
-			self.parseMessage(self.eoreCTL.writeAtten(eore.MID_AMP_ATTEN,         self.state['MID_AMP_ATTEN']))
-			self.parseMessage(self.eoreCTL.noiseDiodePowerCtl(self.state['noiseDiode']))
-			self.parseMessage(self.eoreCTL.writeOscillator(0, self.state['oscillator']))
-			self.parseMessage(self.eoreCTL.powerDownVco())
-			self.parseMessage(self.eoreCTL.setTemperature(self.state['targetTemp']))
-			self.parseMessage(self.eoreCTL.writeSwitch(eore.MAIN_SWITCH, self.state['MAIN_SWITCH']))
-			self.parseMessage(self.eoreCTL.writeSwitch(eore.SWR_SWITCH, self.state['SWR_SWITCH']))
+			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeAtten(eore.MAIN_TONE_ATTEN,       self.state['MAIN_TONE_ATTEN'])))
+			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeAtten(eore.AUX_TONE_ATTEN,        self.state['AUX_TONE_ATTEN'])))
+			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeAtten(eore.NOISE_DIODE_ATTEN,     self.state['NOISE_DIODE_ATTEN'])))
+			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeAtten(eore.SWITCH_SWR_TONE_ATTEN, self.state['SWITCH_SWR_TONE_ATTEN'])))
+			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeAtten(eore.SWITCH_TONE_ATTEN,     self.state['SWITCH_TONE_ATTEN'])))
+			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeAtten(eore.MID_AMP_ATTEN,         self.state['MID_AMP_ATTEN'])))
+			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.noiseDiodePowerCtl(self.state['noiseDiode'])))
+			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeOscillator(0, self.state['oscillator'])))
+			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.powerDownVco()))
+			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.setTemperature(self.state['targetTemp'])))
+			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeSwitch(eore.MAIN_SWITCH, self.state['MAIN_SWITCH'])))
+			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeSwitch(eore.SWR_SWITCH, self.state['SWR_SWITCH'])))
 
 	def sendState(self):
 		
 		# We have everything we want
 		#	if all(self.state.values()):
-		self.log.info("Complete self.state = %s. emitting to logger!", self.state)
+		self.log.debug("Complete self.state = %s. emitting to logger!", self.state)
 		self.dataQueue.put({"eore-info" : self.state.copy()})
 		self.clearData()
 
