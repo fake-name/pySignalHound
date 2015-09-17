@@ -19,7 +19,6 @@ import logSetup
 import logging
 import time
 import traceback
-
 import numpy as np
 
 # Pull in the settings crap
@@ -42,14 +41,17 @@ def startAcquisition(sh, dataQueue, plotQueue):
 	# sh.configureDemod("fm", 102.3e6, 250e3, 12e3, 20, 50)
 
 	# sh.configureRawSweep(100, 8, 2)
-	sh.initiate(mode = ACQ_TYPE, flag = "ignored")
+	try:
+		self.startAcquisition(dataQueue, plotQueue)
+	except KeyError:
+		self.log.error("SignalHound cannot be accessed. Already In use?") 
+		self.exit(dataQueues, cmdQueue, FELock, ctrlNs)
 
 	dataQueue.put({"settings" : sh.getCurrentAcquisitionSettings()})
 	if plotQueue:
 		plotQueue.put({"settings" : sh.getCurrentAcquisitionSettings()})
 
 def sweepSource(dataQueues, cmdQueue, ctrlNs, printQueue):
-
 	dataQueue, plotQueue = dataQueues
 
 
@@ -79,6 +81,10 @@ def sweepSource(dataQueues, cmdQueue, ctrlNs, printQueue):
 
 
 	while 1:
+		# only aquire lock the first time
+		if not lockcheck:
+			FELock.acquire()
+			lockcheck = True
 		try:
 			trace = sh.fetchTrace()
 			traceInfo = sh.queryTraceInfo()
@@ -119,7 +125,8 @@ def sweepSource(dataQueues, cmdQueue, ctrlNs, printQueue):
 
 				# Only write out to the file if we actually have data
 				if runningSumItems != 0:
-
+					if cmdQueue != None:
+							cmdQueue.put({"update": "now"})
 
 					dataQueue.put({"row" : (saveTime, startFreq, binSize, runningSumItems, arr)})
 					if plotQueue:
@@ -133,6 +140,9 @@ def sweepSource(dataQueues, cmdQueue, ctrlNs, printQueue):
 					log.info("Estimated items in processing queue %s", dataQueue.qsize())
 					log.info("Running sum shape = %s, items = %s", runningSum.shape, runningSumItems)
 					runningSumItems = 0
+				if  lockcheck:
+					FELock.release()
+					lockcheck = False
 
 				# now = time.time()
 				# delta = now-loop_timer
@@ -154,6 +164,9 @@ def sweepSource(dataQueues, cmdQueue, ctrlNs, printQueue):
 
 
 		except Exception:
+			if  lockcheck:
+				FELock.release()
+				lockcheck = False
 			log.error("IOError in Acquisition Thread!")
 			log.error(traceback.format_exc())
 
@@ -197,26 +210,38 @@ def sweepSource(dataQueues, cmdQueue, ctrlNs, printQueue):
 		loops += 1
 
 		if ctrlNs.run == False:
+			if  lockcheck:
+				FELock.release()
+				lockcheck = False
 			log.info("Stopping Acq-thread!")
 			break
 
-
+	if  lockcheck:
+		FELock.release()
+		lockcheck = False
 	sh.abort()
-	sh.closeDevice()
+	self.exit(dataQueues, cmdQueue, FELock, ctrlNs)
 
-	del(sh)
+	def exit(self, dataQueues, cmdQueue, FELock, ctrlNs):
+		dataQueue, plotQueue = dataQueues
+		
+		self.sh.closeDevice()
+
+		del(self.sh)
 
 
 
-	log.info("Acq-thread closing dataQueue!")
-	dataQueue.close()
-	dataQueue.join_thread()
-	if plotQueue:
+		self.log.info("Acq-thread closing dataQueue!")
+		dataQueue.close()
+		dataQueue.join_thread()
+
 		plotQueue.close()
 		plotQueue.cancel_join_thread()
 
-	ctrlNs.acqRunning = False
+		ctrlNs.acqRunning = False
 
-	log.info("Acq-thread exiting!")
-	printQueue.close()
-	printQueue.join_thread()
+		self.log.warning("Acq-thread exiting!")
+		self.printQueue.close()
+		self.printQueue.join_thread()
+		sys.exit()
+ 

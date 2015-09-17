@@ -124,7 +124,7 @@ def initLogging(logLevel=logging.INFO, printQ = None):
 		ch = ColourHandler(printQ = printQ)
 		mainLogger.addHandler(ch)
 
-		logName = "Error - %s.txt" % (time.strftime("%Y-%m-%d %H;%M;%S", time.gmtime()))
+		logName = "Log - %s.txt" % (time.strftime("%Y-%m-%d %H", time.gmtime()))
 
 		if not os.path.isdir("./logs"):
 			os.mkdir("./logs")

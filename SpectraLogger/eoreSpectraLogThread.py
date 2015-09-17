@@ -3,7 +3,7 @@
 # Wrapper for Test-Equipment-Plus's "SignalHound" series of USB spectrum analysers.
 #
 # Written By Connor Wolf <wolf@imaginaryindustries.com>
-#
+# Modified by Caio Motta <Caio@deepspace.ucsb.edu>
 
 #  * ----------------------------------------------------------------------------
 #  * "THE BEER-WARE LICENSE":
@@ -26,7 +26,6 @@ import logSetup
 import logging
 import time
 import numpy as np
-
 import h5py
 import eore
 import EOREsettings
@@ -57,17 +56,22 @@ def logSweeps(dataQueue, ctrlNs, printQueue, test=False):
 					log.info("Have array size for acquisition. Creating HDF5 file and starting logging.")
 					arrWidth = tmp["arrSize"]
 					break
+			if ctrlNs.acqRunning == False:
+				log.info("Stopping Log-thread!")
+				ctrlNs.logRunning = False
+				break
 	else:
 		arrWidth = 20
 
 
 	while ctrlNs.acqRunning:
+		log.debug(ctrlNs.acqRunning)
 		logIter(dataQueue, ctrlNs, printQueue, arrWidth, test)
 
 	log.info("Log-thread closing queues!")
 	dataQueue.close()
 	dataQueue.join_thread()
-	log.info("Log-thread exiting!")
+	log.warning("Log-thread exiting!")
 	printQueue.close()
 	printQueue.join_thread()
 
@@ -106,7 +110,6 @@ def logIter(dataQueue, ctrlNs, printQueue, arrWidth, test=False):
 	runningSumItems = 0
 	row = False
 	while 1:
-
 		if dataQueue.empty():
 			#log.info("Data queue empty")
 			time.sleep(0.005)
@@ -177,6 +180,7 @@ def logIter(dataQueue, ctrlNs, printQueue, arrWidth, test=False):
 
 		if ctrlNs.acqRunning == False:
 			log.info("Stopping Log-thread!")
+			ctrlNs.logRunning = False
 			break
 
 

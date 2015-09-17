@@ -25,7 +25,6 @@ import logSetup
 import time
 import serial
 import pynmea2
-
 import traceback
 
 from settings import GPS_COM_PORT

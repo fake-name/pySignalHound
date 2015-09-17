@@ -22,8 +22,8 @@ import logging
 import time
 import traceback
 from multiprocessing import Lock
-
 import numpy as np
+import sys
 
 # Pull in the settings crap
 from settings import ACQ_FREQ, ACQ_SPAN, ACQ_REF_LEVEL_DB, ACQ_ATTENUATION_DB, ACQ_GAIN_SETTING, ACQ_RBW, ACQ_VBW, ACQ_OVERLAP, ACQ_BIN_SAMPLES
@@ -84,10 +84,9 @@ class InternalSweepAcqThread(object):
 		self.sh.configureWindow(window = ACQ_WINDOW_TYPE)
 		self.sh.configureProcUnits(units = ACQ_UNITS)
 		self.sh.configureTrigger(trigType = "none", edge = "rising-edge", level = 0, timeout = 5)
-
+		
 		self.sh.initiate(mode = "real-time", flag = "ignored")
-
-
+		
 
 		dataQueue.put({"settings" : self.sh.getCurrentAcquisitionSettings()})
 		plotQueue.put({"settings" : self.sh.getCurrentAcquisitionSettings()})
@@ -107,7 +106,12 @@ class InternalSweepAcqThread(object):
 		loops = 0
 
 		self.sh = SignalHound()
-		self.startAcquisition(dataQueue, plotQueue)
+		try:
+			self.startAcquisition(dataQueue, plotQueue)
+		except KeyError:
+			self.log.error("SignalHound cannot be accessed. Already In use?") 
+			self.exit(dataQueues, cmdQueue, FELock, ctrlNs)
+
 
 		# Send the trace size to the acq thread so I can properly set up the data-log file
 		numPoints = self.sh.queryTraceInfo()["arr-size"]
@@ -121,7 +125,7 @@ class InternalSweepAcqThread(object):
 		startFreq = 0
 		lockcheck = False
 
-		while 1:
+		while ctrlNs.acqRunning == True:
 			# only aquire lock the first time
 			if not lockcheck:
 				FELock.acquire()
@@ -169,8 +173,8 @@ class InternalSweepAcqThread(object):
 
 					# Only write out to the file if we actually have data
 					if runningSumItems != 0:
-
-						cmdQueue.put({"update": "now"})
+						if cmdQueue != None:
+							cmdQueue.put({"update": "now"})
 						dataQueue.put({"row" : (saveTime, startFreq, binSize, runningSumItems, arr)})
 						if plotQueue:
 							plotQueue.put({"row" : (saveTime, startFreq, binSize, runningSumItems, arr)})
@@ -292,7 +296,14 @@ class InternalSweepAcqThread(object):
 		if  lockcheck:
 			FELock.release()
 			lockcheck = False
+
 		self.sh.abort()
+
+		self.exit(dataQueues, cmdQueue, FELock, ctrlNs)
+
+	def exit(self, dataQueues, cmdQueue, FELock, ctrlNs):
+		dataQueue, plotQueue = dataQueues
+		
 		self.sh.closeDevice()
 
 		del(self.sh)
@@ -308,6 +319,7 @@ class InternalSweepAcqThread(object):
 
 		ctrlNs.acqRunning = False
 
-		self.log.info("Acq-thread exiting!")
+		self.log.warning("Acq-thread exiting!")
 		self.printQueue.close()
 		self.printQueue.join_thread()
+		sys.exit()

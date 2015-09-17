@@ -26,7 +26,6 @@ NUM_AVERAGE = 1
 
 def printer(printQueue, ctrlNs):
 
-
 	log = logging.getLogger("Main.Printer")
 	logSetup.initLogging()
 
@@ -38,7 +37,8 @@ def printer(printQueue, ctrlNs):
 
 
 
-		if ctrlNs.acqRunning == False and ctrlNs.apiRunning == False:
+		if ctrlNs.acqRunning == False and ctrlNs.apiRunning == False and ctrlNs.apiRunning == False and\
+		ctrlNs.logRunning == False and ctrlNs.EORERunning == False and ctrlNs.stopped == True:
 			print("Stopping Printing-thread!")
 			break
 

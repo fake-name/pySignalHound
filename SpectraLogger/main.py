@@ -30,10 +30,10 @@ import spectraPlotApiThread
 import printThread
 import EOREsettings
 import settings
-
+import time
+import signal
 
 def go(logGps=False, gpsTest=False, logEORE = False):
-
 	plotQueue = mp.Queue()
 	dataQueue = mp.Queue()
 	printQueue = mp.Queue()
@@ -71,6 +71,8 @@ def go(logGps=False, gpsTest=False, logEORE = False):
 		if not EOREsettings.EORE_COM_PORT:
 			print("WARNING: No EORE port specified. EORE mode can not work.")
 
+		ctrlNs.EORERunning = True
+
 		EOREProc = mp.Process(target=eoreLogThread.startEORELog, name="EOREThread", args=((dataQueue, plotQueue), cmdQueue, FELock, ctrlNs, printQueue))
 		EOREProc.start()
 		logProc = mp.Process(target=eoreSpectraLogThread.logSweeps, name="LogThread", args=(dataQueue, ctrlNs, printQueue, gpsTest))
@@ -97,18 +99,19 @@ def go(logGps=False, gpsTest=False, logEORE = False):
 	printProc.daemon = True
 	printProc.start()
 
+	
+	
+	while 1:
+		
+		if ctrlNs.acqRunning == False:
+			break
+		if ctrlNs.EORERunning == False:
+			break
 
-	try:
-		while 1:
-			inStr = raw_input()
-			print inStr
-			if inStr == "q":
-				break
 
-
-	except KeyboardInterrupt:
-		pass
-
+			
+				
+	
 
 
 	log.info("Stopping Processes!")
@@ -165,8 +168,11 @@ def go(logGps=False, gpsTest=False, logEORE = False):
 
 	print("Joining on PrintProc")
 	while printProc.is_alive():
+		print ctrlNs
+		ctrlNs.stopped = True
 		printProc.join(0.05)
 		print("wating on printProc")
+
 
 
 

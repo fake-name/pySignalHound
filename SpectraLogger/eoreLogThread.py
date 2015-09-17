@@ -32,86 +32,55 @@ import multiprocessing as mp
 
 import traceback
 
-from EOREsettings import EORE_COM_PORT, EORE_CONFIGS
+from EOREsettings import EORE_COM_PORT, EORE_CONFIGS, EORE_SWITCHES, EORE_ATTENUATORS
 
 def startEORELog(dataQueues, cmdQueue, FELock, ctrlNs, printQueue):
 	print("Creating GPS thread")
-	EORERunner = EORELogThread(printQueue, ctrlNs)
-	EORERunner.sweepSource(dataQueues, cmdQueue, FELock, ctrlNs)
+	EORERunner = EORELogThread(dataQueues, printQueue, ctrlNs)
+	EORERunner.sweepSource(cmdQueue, FELock, ctrlNs)
 
 class EORELogThread(object):
 	log = logging.getLogger("Main.EOREProcess")
 	mainIndex = 0
 	SWRIndex = 0
-	state = {
-		'MAIN_TONE_ATTEN' : 0,
-		'AUX_TONE_ATTEN' : 0,
-		'NOISE_DIODE_ATTEN' : 0,
-		'SWITCH_SWR_TONE_ATTEN' : 0,
-		'SWITCH_TONE_ATTEN' : 0,
-		'MID_AMP_ATTEN' : 0,
-		'noiseDiode' : 1, 
-		'oscillator' : 0,
-		'VCO' : 0,
-		'temp' : None, 
-		'targetTemp' : 15,
-		'MAIN_SWITCH' : eore.TERMINATION,
-		'SWR_SWITCH' : eore.SWITCHED_SWEEPER_INPUT,
-		'MAIN_SWITCH_ROTATION' : [eore.TERMINATION, eore.NOISE_SOURCE],
-		'SWR_SWITCH_ROTATION' : [eore.SWITCHED_SWEEPER_INPUT]
-	}  
 
-	attenuators = [
-		eore.MAIN_TONE_ATTEN, 
-		eore.MAIN_TONE_ATTEN, 
-		eore.NOISE_DIODE_ATTEN, 
-		eore.SWITCH_SWR_TONE_ATTEN,
-		eore.SWITCH_TONE_ATTEN, 
-		eore.MID_AMP_ATTEN
-	]
+	state = EORE_CONFIGS["default"]
+	stateBackup = EORE_CONFIGS["default"]
+	attenuators = EORE_ATTENUATORS
 
-	switches = [
-		eore.MAIN_SWITCH, 
-		eore.SWR_SWITCH, 
-	]
+	switches = EORE_SWITCHES
 
-	def __init__(self, printQueue, ctrlNs):
+	def __init__(self, dataQueues, printQueue, ctrlNs):
 		self.log.info("Initializing EORE")
-		try:
-			self.eoreCTL = eore.EoreController(EORE_COM_PORT)
-		except:
-   			self.log.error("No connection to the device could be established")
-   			ctrlNs.run == False
-
-
+		self.dataQueue, self.plotQueue = dataQueues
+		self.ctrlNs = ctrlNs
 		self.printQueue = printQueue
 		logSetup.initLogging(printQ=printQueue)
 
-		self.state['temp'] = float(self.eoreCTL.getTemperature()[25:34])
+		serialfailcount = 0
+		try:
+			self.eoreCTL = eore.EoreController(EORE_COM_PORT)
+		except serial.serialutil.SerialException:
+				self.eoreCTL = eore.EoreController(EORE_COM_PORT)
+				if (serialfailcount > 1):
+					self.log.error("No connection to EORE could be established!")
+					self.log.error("You sure this thing's plugged in?")
+					self.state = EORE_CONFIGS["invalid"]	
 
-		self.parseMessage(self.eoreCTL.writeAtten(eore.MAIN_TONE_ATTEN,       self.state['MAIN_TONE_ATTEN']))
-		self.parseMessage(self.eoreCTL.writeAtten(eore.AUX_TONE_ATTEN,        self.state['AUX_TONE_ATTEN']))
-		self.parseMessage(self.eoreCTL.writeAtten(eore.NOISE_DIODE_ATTEN,     self.state['NOISE_DIODE_ATTEN']))
-		self.parseMessage(self.eoreCTL.writeAtten(eore.SWITCH_SWR_TONE_ATTEN, self.state['SWITCH_SWR_TONE_ATTEN']))
-		self.parseMessage(self.eoreCTL.writeAtten(eore.SWITCH_TONE_ATTEN,     self.state['SWITCH_TONE_ATTEN']))
-		self.parseMessage(self.eoreCTL.writeAtten(eore.MID_AMP_ATTEN,         self.state['MID_AMP_ATTEN']))
-		self.parseMessage(self.eoreCTL.noiseDiodePowerCtl(self.state['noiseDiode']))
-		self.parseMessage(self.eoreCTL.writeOscillator(0, self.state['oscillator']))
-		self.parseMessage(self.eoreCTL.powerDownVco())
-		self.parseMessage(self.eoreCTL.setTemperature(self.state['targetTemp']))
-		self.parseMessage(self.eoreCTL.writeSwitch(eore.MAIN_SWITCH, self.state['MAIN_SWITCH']))
-		self.parseMessage(self.eoreCTL.writeSwitch(eore.SWR_SWITCH, self.state['SWR_SWITCH']))
+		self.state['temp'] = float(self.Watchdog(lambda: self.eoreCTL.getTemperature()[25:34]) or -1)
 
+		self.update("default")
 
 
-	def sweepSource(self, dataQueues, cmdQueue, FELock, ctrlNs):
+
+	def sweepSource(self, cmdQueue, FELock, ctrlNs):
 		print("EORE Log Thread starting")
-		self.dataQueue, self.plotQueue = dataQueues
+		
 		self.cmdQueue = cmdQueue
 		
 		while 1:
 			FELock.acquire()
-			self.state['temp'] = float(self.Watchdog(lambda: self.eoreCTL.getTemperature()[25:34]))
+			self.state['temp'] = float(self.Watchdog(lambda: self.eoreCTL.getTemperature()[25:34]) or -1)
 			if cmdQueue.empty():
 				time.sleep(0.005)
 			else:
@@ -140,11 +109,12 @@ class EORELogThread(object):
 
 			FELock.release()	
 			if ctrlNs.run == False:
-				FELock.release()
 				self.log.info("Stopping EORE-thread!")
+
 				break
+		self.exit()
 
-
+	def exit(self): 
 		self.log.info("EORE-thread closing dataQueue!")
 		self.dataQueue.close()
 		self.dataQueue.join_thread()
@@ -152,10 +122,11 @@ class EORELogThread(object):
 		self.plotQueue.close()
 		self.plotQueue.cancel_join_thread()
 
-
-		self.log.info("EORE-thread exiting!")
+		self.ctrlNs.EORERunning = False
+		self.log.warning("EORE-thread exiting!")
 		self.printQueue.close()
 		self.printQueue.join_thread()
+		sys.exit()
 
 
 	def parseMessage(self, ret):
@@ -172,18 +143,35 @@ class EORELogThread(object):
 
 	def Watchdog(self, f):
 		failcount = 0
+		serialfailcount = 0
 		while (1):
 			try:
+				if serialfailcount > 0:
+					self.eoreCTL = eore.EoreController(EORE_COM_PORT)
+					self.log.warning("EORE successfully reconnected!")
+					self.state = self.stateBackup
+					self.update()
 				return f()
 			except (eore.TimeoutError, eore.CommandError, eore.UnknownResponseError) as e:
 				self.log.warning("Could not access EORE, Retrying...")
-	   			failcount += 1
-	   			if (failcount > 5):
-	   				self.log.error("ERROR when attempting to modify EORE state!")
-	   				self.log.error(e)
-	   				break
+				failcount += 1
+				if (failcount > 5):
+					self.log.error("ERROR when attempting to modify EORE state!")
+					self.log.error(e)
+					self.state = EORE_CONFIGS["invalid"]
+					return None
+			except serial.serialutil.SerialException:
+				self.log.warning("EORE disconnected!")
+				serialfailcount += 1
+				if (serialfailcount > 1):
+					self.log.error("No connection to EORE could be established!")
+					self.log.error("You sure this thing's plugged in?")
+					self.state = EORE_CONFIGS["invalid"]
+					return None
 
-	def update(self, mode):
+
+	def update(self, mode = None):
+		#TODO: Make the actual settings completely hidden so that if more attenuators or switches are added only an update of the settings is needed.
 		if mode == "now":
 			if len(self.state['MAIN_SWITCH_ROTATION']) > 1:
 				self.mainIndex = (self.mainIndex + 1) % len(self.state['MAIN_SWITCH_ROTATION'])
@@ -195,7 +183,9 @@ class EORELogThread(object):
 				self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeSwitch(eore.SWR_SWITCH, self.state['SWR_SWITCH_'])))
 			return
 		else:
-			self.state = EORE_CONFIGS[mode]
+			if mode != None:
+				self.state = EORE_CONFIGS[mode]
+				self.stateBackup = EORE_CONFIGS[mode]
 			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeAtten(eore.MAIN_TONE_ATTEN,       self.state['MAIN_TONE_ATTEN'])))
 			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeAtten(eore.AUX_TONE_ATTEN,        self.state['AUX_TONE_ATTEN'])))
 			self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeAtten(eore.NOISE_DIODE_ATTEN,     self.state['NOISE_DIODE_ATTEN'])))

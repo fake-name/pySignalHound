@@ -28,7 +28,6 @@ import time
 import numpy as np
 
 import h5py
-
 import os
 import os.path
 import cPickle
@@ -65,7 +64,7 @@ def logSweeps(dataQueue, ctrlNs, printQueue, test=False):
 	log.info("Log-thread closing queues!")
 	dataQueue.close()
 	dataQueue.join_thread()
-	log.info("Log-thread exiting!")
+	log.warning("Log-thread exiting!")
 	printQueue.close()
 	printQueue.join_thread()
 

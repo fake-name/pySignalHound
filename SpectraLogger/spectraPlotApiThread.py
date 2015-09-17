@@ -33,8 +33,6 @@ TX_TIMEOUT = 5
 CONN_TIMEOUT = 0.01
 
 def startApiServer(dataQueue, ctrlNs, printQueue):
-
-
 	log = logging.getLogger("Main.PlotApiProcess")
 	logSetup.initLogging(printQ = printQueue)
 	log.info("PlotApiProcess starting up")
@@ -173,7 +171,7 @@ def startApiServer(dataQueue, ctrlNs, printQueue):
 				loop_timer = now
 
 
-	log.info("Print-API-thread exiting!")
+	log.warning("Plot-API-thread exiting!")
 	ctrlNs.apiRunning = False
 	dataQueue.close()
 	dataQueue.join_thread()
