@@ -34,10 +34,11 @@ import time
 import signal
 
 def go(logGps=False, gpsTest=False, logEORE = False):
+	m = mp.Manager()
 	plotQueue = mp.Queue()
-	dataQueue = mp.Queue()
+	dataQueue = m.Queue()
 	printQueue = mp.Queue()
-	cmdQueue = mp.Queue()
+	cmdQueue = mp.JoinableQueue()
 	ctrlManager = mp.Manager()
 	FELock = mp.Lock()
 

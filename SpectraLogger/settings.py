@@ -108,7 +108,7 @@ PRINT_LOOP_CNT         = 50
 CAL_CHK_LOOP_CNT       = 5000
 
 # Number of acquisition sweeps averaged over for each data-array written to the log files.
-NUM_AVERAGE            = 100
+NUM_AVERAGE            = 30
 
 # Number of acquisition sweeps averaged over for each data-array fet to the plotting system
 # ~60 divided by NUM_AVERAGE yields Hz

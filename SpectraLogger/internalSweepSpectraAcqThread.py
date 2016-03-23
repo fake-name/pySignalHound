@@ -127,9 +127,6 @@ class InternalSweepAcqThread(object):
 
 		while ctrlNs.acqRunning == True:
 			# only aquire lock the first time
-			if not lockcheck:
-				FELock.acquire()
-				lockcheck = True
 			try:
 
 
@@ -173,9 +170,11 @@ class InternalSweepAcqThread(object):
 
 					# Only write out to the file if we actually have data
 					if runningSumItems != 0:
+						dataQueue.put({"row" : (saveTime, startFreq, binSize, runningSumItems, arr)})
 						if cmdQueue != None:
 							cmdQueue.put({"update": "now"})
-						dataQueue.put({"row" : (saveTime, startFreq, binSize, runningSumItems, arr)})
+						cmdQueue.join()
+						
 						if plotQueue:
 							plotQueue.put({"row" : (saveTime, startFreq, binSize, runningSumItems, arr)})
 
@@ -187,9 +186,7 @@ class InternalSweepAcqThread(object):
 						self.log.info("Estimated items in processing queue %s", dataQueue.qsize())
 						self.log.info("Running sum shape = %s, items = %s", runningSum.shape, runningSumItems)
 						runningSumItems = 0
-					if  lockcheck:
-						FELock.release()
-						lockcheck = False
+
 
 					# now = time.time()
 					# delta = now-loop_timer
@@ -215,9 +212,6 @@ class InternalSweepAcqThread(object):
 
 			except Exception: 
 				# release lock if there is an exception
-				if lockcheck:
-					FELock.release()
-					lockcheck = False
 				self.log.error("IOError in Acquisition Thread!")
 				self.log.error(traceback.format_exc())
 
@@ -287,15 +281,10 @@ class InternalSweepAcqThread(object):
 
 
 			if ctrlNs.run == False:
-				if  lockcheck:
-					FELock.release()
-					lockcheck = False
+
 				self.log.info("Stopping Acq-thread!")
 				break
 
-		if  lockcheck:
-			FELock.release()
-			lockcheck = False
 
 		self.sh.abort()
 

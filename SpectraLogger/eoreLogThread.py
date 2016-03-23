@@ -45,6 +45,7 @@ class EORELogThread(object):
 	SWRIndex = 0
 
 	state = EORE_CONFIGS["default"]
+	nextState = EORE_CONFIGS["default"]
 	stateBackup = EORE_CONFIGS["default"]
 	attenuators = EORE_ATTENUATORS
 
@@ -79,35 +80,25 @@ class EORELogThread(object):
 		self.cmdQueue = cmdQueue
 		
 		while 1:
-			FELock.acquire()
 			self.state['temp'] = float(self.Watchdog(lambda: self.eoreCTL.getTemperature()[25:34]) or -1)
 			if cmdQueue.empty():
-				time.sleep(0.005)
+				pass
 			else:
 				cmd = cmdQueue.get()
 				if "update" in cmd:
+					self.sendState()
+					if (cmp(self.state, self.nextState) != 0):
+						self.update()
 					self.update(cmd["update"])
+					self.nextState = self.state
 				else:
 					for key in cmd:
-						self.state[key] = cmd[key]
-						if key in self.switches:
-							self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeSwitch(key, cmd[key])))
-						elif key in self.attenuators:
-							self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeAtten(key, cmd[key])))
-						elif key == 'noiseDiode':
-							self.parseMessage(self.Watchdog(lambda: self.eoreCTL.noiseDiodePowerCtl(cmd[key])))
-						elif key == 'oscillator':
-							self.parseMessage(self.Watchdog(lambda: self.eoreCTL.writeOscillator(0, cmd[key])))
-						elif key == 'VCO' :
-							if cmd['VCO'] > 0:
-								self.parseMessage(self.Watchdog(lambda: self.eoreCTL.chirpVco(cmd[key])))
-							else: self.Watchdog(lambda: self.eoreCTL.powerDownVco())
-						elif key == 'targetTemp' :
-							self.parseMessage(self.Watchdog(lambda: self.eoreCTL.setTemperature(cmd[key])))
+						self.nextState[key] = cmd[key]
 				self.log.info("EORE state updated!")
-				self.sendState()			
+					
+				cmdQueue.task_done()
 
-			FELock.release()	
+				
 			if ctrlNs.run == False:
 				self.log.info("Stopping EORE-thread!")
 

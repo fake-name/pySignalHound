@@ -114,13 +114,12 @@ def logIter(dataQueue, ctrlNs, printQueue, arrWidth, test=False):
 			#log.info("Data queue empty")
 			time.sleep(0.005)
 		else:
-
 			tmp = dataQueue.get()
 			# print "data" in tmp
 			# print "info" in tmp
 			# print "data" in tmp and "max" in tmp["data"]
-			log.debug("current keys: %s", tmp.keys())
-			
+			log.warning("current keys: %s", tmp.keys())
+
 			if "row" in tmp:
 				row = True
 				saveTime, startFreq, binSize, runningSumItems, arr = tmp["row"]
