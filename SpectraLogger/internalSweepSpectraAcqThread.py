@@ -170,11 +170,13 @@ class InternalSweepAcqThread(object):
 
 					# Only write out to the file if we actually have data
 					if runningSumItems != 0:
+						self.log.warning("Data ready!")
 						dataQueue.put({"row" : (saveTime, startFreq, binSize, runningSumItems, arr)})
+						self.log.warning("sending EORE retune!")
 						if cmdQueue != None:
 							cmdQueue.put({"update": "now"})
 						cmdQueue.join()
-						
+						self.log.warning("EORE updated!")
 						if plotQueue:
 							plotQueue.put({"row" : (saveTime, startFreq, binSize, runningSumItems, arr)})
 

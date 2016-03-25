@@ -118,7 +118,7 @@ def logIter(dataQueue, ctrlNs, printQueue, arrWidth, test=False):
 			# print "data" in tmp
 			# print "info" in tmp
 			# print "data" in tmp and "max" in tmp["data"]
-			log.warning("current keys: %s", tmp.keys())
+			#log.warning("current keys: %s", tmp.keys())
 
 			if "row" in tmp:
 				row = True
