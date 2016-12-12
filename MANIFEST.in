@@ -1,5 +1,5 @@
 
-include app/data/bb_api.dll
-include bb_api_h.py
-include SignalHound.py
+include SignalHound/data/bb_api.dll
+include SignalHound/bb_api_h.py
+include SignalHound/__init__.py
 include tests.py
